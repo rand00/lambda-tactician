@@ -1,4 +1,4 @@
 lambda-commando
 ===============
 
-Terminal lambda 'shooter' game
+Terminal one-output-line lambda multiplayer 'shooter' game written in OCaml. _Development under way._
