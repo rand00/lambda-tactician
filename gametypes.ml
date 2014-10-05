@@ -4,25 +4,44 @@ type symbol = X | Y | Z
 type player_id = P0 | P1
 
 type element = 
-  | Lambda of player_id * symbol list * symbol list
-  | Symbol of player_id * symbol
+  | Lambda of symbol * symbol
+  | Symbol of symbol
   | Empty
 
-type game_board = element array
+type element_wrap = {
+  owner : player_id;
+  element : element;
+  mana_cost : float;
+  killed : bool;
+}
+
+type game_board = element_wrap array
+type temp_board = (element_wrap list) array
+
+type location = 
+  | Local
+  | Remote of string * int
+
+type mana = float
 
 type player = {
   id : player_id;
   name : string;
-  ip : string;
-  port : int;
-
+  location : location;
   position : [ `Left | `Right ];
-  next_move : (player_id -> game_board -> element);
-  mana : float;
+  next_move : (game_board -> mana -> element);
+  mana : mana;
 }
 
 type game_state = {
-  player0 : player;
-  player1 : player;
+  p0 : player;
+  p1 : player;
+  turn : player_id;
   board : game_board;
+  winner : player_id option;
 }
+
+type game_action = 
+  | Kill of element
+  | Keep of element
+  | Application of element * element
