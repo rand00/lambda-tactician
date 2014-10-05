@@ -19,6 +19,7 @@ module Random = struct
       Symbol (player_id, random_symbol ())
     else Empty
 
+  (*goto: use lwt here?*)
   let next_move player_id _ = 
     let pct_lambda, pct_symbol = (0.1, 0.5)
     in random_element player_id (pct_lambda, pct_symbol)

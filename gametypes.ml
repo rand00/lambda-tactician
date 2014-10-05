@@ -17,7 +17,7 @@ type player = {
   port : int;
 
   position : [ `Left | `Right ];
-  next_move : (player_id -> board -> element);
+  next_move : (player_id -> game_board -> element);
   mana : float;
 }
 
