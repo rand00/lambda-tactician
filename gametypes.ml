@@ -1,12 +1,6 @@
 
 type symbol = X | Y | Z
 
-let random_symbol () = 
-  Random.int 3 |> function
-  | 0 -> X
-  | 1 -> Y
-  | 2 -> Z
-
 type player_id = P0 | P1
 
 type element = 
