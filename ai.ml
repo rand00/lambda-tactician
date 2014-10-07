@@ -31,10 +31,10 @@ module Random = struct
   let random_element (pct_lambda, pct_symbol) = 
     let rand = Random.float 1. in
     if rand < pct_lambda then
-      Lambda (random_symbol (), random_symbol ())
+      Some (Lambda (random_symbol (), random_symbol ()))
     else if rand < (pct_lambda +. pct_symbol) then
-      Symbol (random_symbol ())
-    else Empty
+      Some (Symbol (random_symbol ()))
+    else None
 
   (*goto: use lwt here?*)
   let next_move _ _ = 

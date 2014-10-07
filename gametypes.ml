@@ -23,7 +23,6 @@ type player_id = P0 | P1
 type element = 
   | Lambda of symbol * symbol
   | Symbol of symbol
-  | Empty
 
 type element_wrap = {
   owner : player_id;
@@ -33,7 +32,7 @@ type element_wrap = {
   position : int option; (*for Board internal use?*)
 }
 
-type direction = | Left | Right
+type direction = Left | Right
 
 type element_wrap_active = element_wrap
 
@@ -47,4 +46,4 @@ type board_action =
 
 type board_action_result = 
   | Jumpover of element_wrap_active * element_wrap
-  | Out_of_bounds of direction element_wrap 
+  | Out_of_bounds of direction * element_wrap 
