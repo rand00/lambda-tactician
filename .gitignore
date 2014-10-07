@@ -11,5 +11,5 @@
 *.native
 *#
 *~
-/_build
+_build
 /core_rand
