@@ -1,4 +1,6 @@
-lambda-commando
+lambda-tactician
 ===============
 
-Cmd-line multiplayer one-output-line lambda tactical 'shooter' game written in OCaml. _Development under way._
+Multiplayer, cmd-line, one-output-line, lambda, tactical, time-/turn-based game written in OCaml. 
+
+_Development under way._
