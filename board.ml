@@ -1,6 +1,26 @@
+(*
+  LambdaTactician - a cmd-line tactical lambda game.
+  Copyright (C) 2014 Claes Worm 
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
 open Batteries
 open Core_rand00 
 open Gametypes
+
+(*goto rewrite these functions to modify board.t state and be practical to call from `Control`*)
+
 
 let player_pos gstate = function
   | P0 -> gstate.p0.position
@@ -9,38 +29,21 @@ let player_pos gstate = function
 let player_opposite = function | P0 -> P1 | P1 -> P0
 
 let make_move from_pos e0 to_pos e1 ~prev_board ~next_board = 
-  match  with 
-  | `Attacking (elem, pos) -> next_board.(pos) <- { elem with just_survived = true }
-  | `Defending (elem, pos) -> prev_board.(pos) <- { elem with just_survived = true }
+  let 
+  in next_board.(pos) <- { elem with just_survived = true }
 
-
-(*goto save a first-class 'rules' module in gstate*)
 let next visualizer gstate = 
-  let open Array in
   let _ = begin
 
-    (*goto: iterate throgh (map) and remove killed elems*)
-
-    (*moving the current players elems*)
-    (*goto return actions + new-array*)
-    fold_left (fun i {element; owner} -> 
+    Array.fold_left (fun i {element; owner} -> 
         if owner = gstate.turn then
           match player_pos gstate owner with
-          | `Left  -> make_move i moving_elem (succ i) (gstate.board.(succ i)) 
-                        ~prev_board:gstate.board ~next_board 
-          | `Right -> make_move i moving_elem (succ i) (gstate.board.(pred i)) 
-                        ~prev_board:gstate.board ~next_board )
-      ((make (length gstate.board) Empty), [])
+          | `Left  -> "..."
+          | `Right -> "...")
+      (Array.(make (length gstate.board) Empty), [])
       gstate.board
   end 
   in
-
-  (*goto add new elem from curr player + add this to actions*)
-  
-  (*goto calculate mana-costs/-income from 'actions', and later return mana+winner-gamestate*)
-
-  (*goto visualize*)
-
   { gstate with 
     board = next_board; 
     turn = (player_opposite gstate.turn) }
