@@ -19,34 +19,19 @@ open Batteries
 open Core_rand00 
 open Gametypes
 
-(*goto rewrite these functions to modify board.t state and be practical to call from `Control`*)
+type t = element_wrap array
 
+let enum = Array.enum
 
-let player_pos gstate = function
-  | P0 -> gstate.p0.position
-  | P1 -> gstate.p1.position
+let eval action board = 
+  | Kill (killer, killed) -> 
+  | Application (lambda, value) -> 
 
-let player_opposite = function | P0 -> P1 | P1 -> P0
+;;
+let eval_to_consequence action board = 
+  match action with 
+  | Move_all_and_add elem -> 
+  | Move_all_backward -> 
 
-let make_move from_pos e0 to_pos e1 ~prev_board ~next_board = 
-  let 
-  in next_board.(pos) <- { elem with just_survived = true }
-
-let next visualizer gstate = 
-  let _ = begin
-
-    Array.fold_left (fun i {element; owner} -> 
-        if owner = gstate.turn then
-          match player_pos gstate owner with
-          | `Left  -> "..."
-          | `Right -> "...")
-      (Array.(make (length gstate.board) Empty), [])
-      gstate.board
-  end 
-  in
-  { gstate with 
-    board = next_board; 
-    turn = (player_opposite gstate.turn) }
-
-
-
+;;
+let remove_killed board = 
