@@ -1,6 +1,8 @@
 
 type t
 
+val make : int -> t
+
 val enum : t -> Gametypes.element_wrap option BatEnum.t
 
 val eval : Gametypes.element_action -> t -> t

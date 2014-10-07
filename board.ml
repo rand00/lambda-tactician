@@ -21,6 +21,8 @@ open Gametypes
 
 type t = (element_wrap option) array
 
+let make n = Array.make n None
+
 let enum = Array.enum
 
 let get_symbol = function
