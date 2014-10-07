@@ -16,35 +16,17 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-type symbol = X | Y | Z
+type location = 
+  | Local
+  | Remote of string * int
 
-type player_id = P0 | P1
+type mana = float
 
-type element = 
-  | Lambda of symbol * symbol
-  | Symbol of symbol
-  | Empty
-
-type element_wrap = {
-  owner : player_id;
-  element : element;
-  mana_cost : float;
-  killed : bool;
-  position : int option; (*for Board internal use?*)
+type t = {
+  id : Gametypes.player_id;
+  name : string;
+  location : location;
+  position : Gametypes.direction;
+  next_move : (Board.t -> mana -> Gametypes.element);
+  mana : mana;
 }
-
-type direction = | Left | Right
-
-type element_wrap_active = element_wrap
-
-type element_action = 
-  | Kill of element_wrap_active * element_wrap
-  | Application of element_wrap_active * element_wrap
-
-type board_action =
-  | Move_all_and_add of direction * element_wrap
-  | Move_all of direction
-
-type board_action_result = 
-  | Jumpover of element_wrap_active * element_wrap
-  | Out_of_bounds of direction element_wrap 

@@ -19,6 +19,25 @@ open Batteries
 open Core_rand00 
 open Gametypes
 
+
+type game_state = {
+  p0 : Player.t;
+  p1 : Player.t;
+  turn : player_id;
+  board : Board.t;
+  winner : player_id option;
+}
+
+module Foo = struct 
+  let a = "owkw"
+end
+
+let player_pos gstate = function
+  | P0 -> gstate.p0.position
+  | P1 -> gstate.p1.position
+
+let player_opposite = function | P0 -> P1 | P1 -> P0
+
 let gstep gstate = 
   ()
 (*goto grab user-action(s?) for this turn*)
@@ -40,6 +59,17 @@ let gstep gstate =
 (*goto calculate mana-costs/-income from 'actions', and later return mana+winner-gamestate*)
 
 (*goto visualize*)
+    Array.fold_left (fun i {element; owner} -> 
+        if owner = gstate.turn then
+          match player_pos gstate owner with
+          | `Left  -> "..."
+          | `Right -> "...")
+      (Array.(make (length gstate.board) Empty), [])
+      gstate.board
+
+  { gstate with 
+    board = Board.eval action board; 
+    turn = (player_opposite gstate.turn) }
 
 
 
