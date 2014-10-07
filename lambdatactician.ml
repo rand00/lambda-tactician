@@ -23,7 +23,7 @@ let _ =
 
   let gstate = {
     winner = None;
-    board = Array.make 16 Empty;
+    board = Board.make 16;
 
     p0 = {
       id = P0; name = "Hansi";
@@ -40,12 +40,10 @@ let _ =
       next_move = Ai.Random.next_move;
       mana = 1.;
     };
-  } in 
+  } 
   
-  in 
-  Control.gloop gstate
-    ~next_fun:Board.next
-    ~visualizer:Visualizer.termprinter0 
+  in Control.gloop gstate
+(*    ~visualizer:Visualizer.termprinter0 *)
     
     
 
