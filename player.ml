@@ -15,6 +15,9 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
+open Batteries
+open Core_rand00
+open Gametypes
 
 type location = 
   | Local
@@ -30,3 +33,6 @@ type t = {
   next_move : (Board.t -> mana -> Gametypes.element);
   mana : mana;
 }
+
+let opposite = function | P0 -> P1 | P1 -> P0
+

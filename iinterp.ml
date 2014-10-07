@@ -30,9 +30,9 @@ let rec match_element = function
                    [" \t"]* "." [" \t"]*
                    ( ["xXyYzZ"] as out ) [" \t"]* >> -> 
     ( match (match_symbol inp, match_symbol out) with
-      | Some sym, Some sym' -> Lambda (sym, sym')
-      | _ -> Empty )
+      | Some sym, Some sym' -> Some (Lambda (sym, sym'))
+      | _ -> None )
   | <:re< [" \t"]* ( ["xXyYzZ"] as sym ) >> -> 
-    Symbol (Option.get (match_symbol sym))
-  | _ -> Empty
+    Some (Symbol (Option.get (match_symbol sym)))
+  | _ -> None
 

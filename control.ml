@@ -28,18 +28,14 @@ type game_state = {
   winner : player_id option;
 }
 
-module Foo = struct 
-  let a = "owkw"
-end
-
-let player_pos gstate = function
+let pposition gstate pid = Player.(
+  match pid with
   | P0 -> gstate.p0.position
-  | P1 -> gstate.p1.position
+  | P1 -> gstate.p1.position)
 
-let player_opposite = function | P0 -> P1 | P1 -> P0
 
-let gstep gstate = 
-  ()
+let gstep gstate = gstate
+
 (*goto grab user-action(s?) for this turn*)
 
 (*goto determine legal turn action based on some new user-action type *)
@@ -59,6 +55,9 @@ let gstep gstate =
 (*goto calculate mana-costs/-income from 'actions', and later return mana+winner-gamestate*)
 
 (*goto visualize*)
+
+(* some game logic to rewrite::
+
     Array.fold_left (fun i {element; owner} -> 
         if owner = gstate.turn then
           match player_pos gstate owner with
@@ -70,11 +69,12 @@ let gstep gstate =
   { gstate with 
     board = Board.eval action board; 
     turn = (player_opposite gstate.turn) }
-
+*)
 
 
 (* ~rules ~visualizer ~iinterp ; firstclass mod's*)
 let gloop gstate_init = 
+  let open Player in
   let rec aux = function
     | { winner = Some player; p0; p1 } -> 
       (match player with 
