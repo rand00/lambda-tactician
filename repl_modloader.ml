@@ -17,6 +17,7 @@ Sys.chdir "..";;
 #load "visualizer.cmo";;
 #load "ai.cmo";;
 #load "player.cmo" ;;
+#load "rules.cmo";;
 #load "board.cmo";;
 #load "control.cmo";;
 #load "iinterp.cmo";;
