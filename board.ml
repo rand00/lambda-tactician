@@ -35,7 +35,7 @@ let get_symbol = function
   | Symbol sym -> sym
   | _ -> failwith "Board.get_symbol: Can only match on Symbol"
 
-let eval action board = 
+let eval_action action board = 
   let board' = Array.copy board in
   let _ = match action with 
   | Kill (killer, killed) -> 
@@ -88,7 +88,7 @@ let move_all p_id direction board =
     ) [] board 
   in conseqs, board'
 
-let eval_to_consequence action board = 
+let eval_round_to_effect action board = 
   match action with 
   | Move_all_and_add (p_id, direction, elem) -> 
     let conseqs, board' = move_all p_id direction board in
