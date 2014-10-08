@@ -19,14 +19,15 @@ open Batteries
 open Core_rand00 
 open Gametypes
 
-type t = (element_wrap option) array
+type t = element_wrap array
 
 let make n = 
   Array.make 
     (if (n mod 2) <> 0 
      then failwith "Board.make: N is not even." 
      else n) 
-    None
+    empty_wrap
+  |> Array.mapi (fun i e -> { e with position = Some i })
 
 let enum = Array.enum
 
@@ -39,43 +40,88 @@ let eval action board =
   let _ = match action with 
   | Kill (killer, killed) -> 
     let pos = Option.get killed.position 
-    in board'.(pos) <- Some {killed with killed = true}
+    in board'.(pos) <- {killed with killed = true}
   | Application (lambda, value) -> (match lambda.element with 
       | Lambda (sym_in, sym_out) 
         when sym_in = (get_symbol value.element) -> 
         ( let pos = Option.get lambda.position 
-          in board'.(pos) <- Some { lambda with element = Symbol sym_out };
+          in board'.(pos) <- { lambda with element = Symbol sym_out };
           let pos = Option.get value.position
-          in board'.(pos) <- None )
+          in board'.(pos) <- empty_wrap )
       | _ -> failwith "Board.eval: Application")
   in board'
 
 
+(*goto
+  . return consequences (jumpover / out of bounds)
+  . return new board
+  . modify positions in moved elems*)
+let move_all p_id direction board = 
+  let len = Array.length board in
+  let board' = make len in
+  let conseqs = Array.fold_left (fun conseqs elem ->
+      match elem with 
+      | {owner} when owner = p_id-> ( match direction with
+
+          | Left -> 
+            let pos_to = (Option.get elem.position)-2 in
+            let pos_over = pos_to+1 in
+            let elem' = { elem with position = Some pos_to} in
+
+            if pos_to < 0 then 
+              (Out_of_bounds (Left, elem')) :: conseqs
+            else 
+              ( board'.(pos_to) <- elem';
+                (Jumpover (elem', board.(pos_over))) :: conseqs )
+
+          | Right -> 
+            let pos_to = (Option.get elem.position)+2 in
+            let pos_over = pos_to-1 in
+            let elem' = {elem with position = Some pos_to} in
+
+            if pos_to >= len then
+              (Out_of_bounds (Right, elem')) :: conseqs
+            else
+              ( board'.(pos_to) <- elem';
+                (Jumpover (elem', board.(pos_over))) :: conseqs ))
+
+      | elem -> 
+        let pos = Option.get elem.position in
+        ( board'.(pos) <- elem;
+          conseqs )
+    ) [] board 
+  in board', conseqs
+
+(*goto
+  . use move_all func
+  . add Some position to new elem's*)
+(*
 let eval_to_consequence action board = 
   match action with 
   | Move_all_and_add (p_id, direction, elem) -> 
     let len = Array.length board in
     let board' = Array.make len None in
-    let rec aux it_from it_to ~pos_old ~pos_moved ~out_of_bounds = 
-      board'.(len-1) <- elem; (*goto goo*)
-      let conseqs = [] in
-      for i = len-2 to 0 do
-        let pos_old = i+1 
-        in match board.(pos_old) with 
-        | {id = p_id} -> 
-          let pos_moved = i-1 in
-          if pos_moved < 0 then
-
-            board'.(pos_moved) <- board.(pos_moved)
-        | _ -> board'.(i) <- 
     ( match direction with 
-      | `Left  -> 
-        ( 
-      | `Right -> 
+      | Left  ->
+        (*goto make sub-func(s) that takes actions and board as input
+          . move_all p_id direction *)
+        ( board'.(len-1) <- elem; (*goto goo*)
+          let conseqs = [] in
+          for i = len-2 to 0 do
+            let pos_old = i+1 
+            in match board.(pos_old) with 
+            | {id = p_id} -> 
+              let pos_moved = i-1 in
+              if pos_moved < 0 then
+
+                board'.(pos_moved) <- board.(pos_moved)
+            | _ -> board'.(i) <- 
+            | Right -> 
   | Move_all (p_id, direction) -> assert false
+*)
 
 let remove_killed = 
   Array.map (function 
-      | Some {killed = true} -> None
+      | {killed = true} -> empty_wrap
       | other -> other) 
       
