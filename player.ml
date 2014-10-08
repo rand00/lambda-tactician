@@ -34,5 +34,5 @@ type t = {
   mana : mana;
 }
 
-let opposite = function | P0 -> P1 | P1 -> P0
+let opposite = function | P0 -> P1 | P1 -> P0 | PNone -> PNone
 

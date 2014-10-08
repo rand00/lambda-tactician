@@ -31,7 +31,8 @@ type game_state = {
 let pposition gstate pid = Player.(
   match pid with
   | P0 -> gstate.p0.position
-  | P1 -> gstate.p1.position)
+  | P1 -> gstate.p1.position
+  | PNone -> failwith "Control: PNone is no player")
 
 
 let gstep gstate = gstate
@@ -79,7 +80,8 @@ let gloop gstate_init =
     | { winner = Some player; p0; p1 } -> 
       (match player with 
        | P0 -> print_endline ("And the winner is "^p0.name^"!")
-       | P1 -> print_endline ("And the winner is "^p1.name^"!"))
+       | P1 -> print_endline ("And the winner is "^p1.name^"!")
+       | PNone -> failwith "Control: Ehm.. something wen't wrong.")
     | gstate -> aux (gstep gstate)
   in 
   aux gstate_init
