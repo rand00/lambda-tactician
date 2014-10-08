@@ -88,7 +88,7 @@ let move_all p_id direction board =
     ) [] board 
   in conseqs, board'
 
-let eval_round_to_effect action board = 
+let eval_move_to_effect action board = 
   match action with 
   | Move_all_and_add (p_id, direction, elem) -> 
     let conseqs, board' = move_all p_id direction board in
