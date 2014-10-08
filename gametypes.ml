@@ -18,11 +18,12 @@
 
 type symbol = X | Y | Z
 
-type player_id = P0 | P1
+type player_id = P0 | P1 | PNone
 
 type element = 
   | Lambda of symbol * symbol
   | Symbol of symbol
+  | Empty
 
 type element_wrap = {
   owner : player_id;
@@ -30,6 +31,14 @@ type element_wrap = {
   mana_cost : float;
   killed : bool;
   position : int option; (*for Board internal use?*)
+}
+
+let empty_wrap = { 
+  owner = PNone; 
+  element = Empty; 
+  mana_cost = 0.; 
+  killed = false;
+  position = None 
 }
 
 type direction = Left | Right
