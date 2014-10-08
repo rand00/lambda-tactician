@@ -19,8 +19,30 @@ open Batteries
 open Core_rand00
 open Gametypes
 
-module Simple = struct 
+module type S = sig 
+  
+  val apply_cost : element_wrap -> element_wrap
 
-  let jumpover_action e0 e1 = ()
+  val return_cost : element -> float
 
 end
+
+module Basic : S = struct 
+
+  let cost_lambda = 0.30
+  let cost_symbol = 0.30
+  let cost_empty = 0.0
+
+  let apply_cost = function
+    | { element = Lambda _ } as e -> { e with mana_cost = cost_lambda } 
+    | { element = Symbol _ } as e -> { e with mana_cost = cost_symbol }
+    | { element = Empty } as e -> { e with mana_cost = cost_empty } 
+
+  let return_cost = function 
+    | Lambda _ -> cost_lambda
+    | Symbol _ -> cost_symbol
+    | Empty -> cost_empty
+
+end
+
+
