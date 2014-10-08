@@ -18,26 +18,27 @@
 open Batteries
 open Core_rand00 
 open Gametypes
-
-
-type game_state = {
-  p0 : Player.t;
-  p1 : Player.t;
-  turn : player_id;
-  board : Board.t;
-  winner : player_id option;
-}
-
-let pposition gstate pid = Player.(
-  match pid with
-  | P0 -> gstate.p0.position
-  | P1 -> gstate.p1.position
-  | PNone -> failwith "Control: PNone is no player")
-
+open Gstate
 
 let gstep gstate = gstate
 
-(*goto grab user-action(s?) for this turn*)
+  let elem_chosen = Gstate.next_move gstate in 
+  (*< goto wrap in rule for 
+    . mana-cost
+    . legality (enough mana?) !!!
+      . other reason not legal?*)
+  let conseqs, board = 
+    match elem_chosen with (*match on element of wrapper*)
+    | Empty -> 
+      Board.eval_move_to_effect 
+        (Move_all 
+           (gstate.turn, 
+            Gstate.(opposite_direction 
+                      (player_position gstate))))
+    | _ -> assert false
+  in gstate 
+
+
 
 (*goto determine legal turn action based on some new user-action type *)
 
