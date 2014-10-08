@@ -30,19 +30,22 @@ let get_symbol = function
   | _ -> failwith "Board.get_symbol: Can only match on Symbol"
 
 let eval action board = 
+  let board_copy = Array.copy board in
   let _ = match action with 
   | Kill (killer, killed) -> 
     let pos = Option.get killed.position 
-    in board.(pos) <- Some {killed with killed = true}
+    in board_copy.(pos) <- Some {killed with killed = true}
   | Application (lambda, value) -> (match lambda.element with 
       | Lambda (sym_in, sym_out) 
         when sym_in = (get_symbol value.element) -> 
         ( let pos = Option.get lambda.position 
-          in board.(pos) <- Some { lambda with element = Symbol sym_out };
+          in board_copy.(pos) <- Some 
+              { lambda with 
+                element = Symbol sym_out };
           let pos = Option.get value.position
-          in board.(pos) <- None )
+          in board_copy.(pos) <- None )
       | _ -> failwith "Board.eval: Application")
-  in board
+  in board_copy
 
 
 let eval_to_consequence action board = 
