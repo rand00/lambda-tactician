@@ -52,10 +52,6 @@ let eval action board =
   in board'
 
 
-(*goto
-  . return consequences (jumpover / out of bounds)
-  . return new board
-  . modify positions in moved elems*)
 let move_all p_id direction board = 
   let len = Array.length board in
   let board' = make len in
@@ -90,38 +86,23 @@ let move_all p_id direction board =
         ( board'.(pos) <- elem;
           conseqs )
     ) [] board 
-  in board', conseqs
+  in conseqs, board'
 
-(*goto
-  . use move_all func
-  . add Some position to new elem's*)
-(*
 let eval_to_consequence action board = 
   match action with 
   | Move_all_and_add (p_id, direction, elem) -> 
-    let len = Array.length board in
-    let board' = Array.make len None in
-    ( match direction with 
-      | Left  ->
-        (*goto make sub-func(s) that takes actions and board as input
-          . move_all p_id direction *)
-        ( board'.(len-1) <- elem; (*goto goo*)
-          let conseqs = [] in
-          for i = len-2 to 0 do
-            let pos_old = i+1 
-            in match board.(pos_old) with 
-            | {id = p_id} -> 
-              let pos_moved = i-1 in
-              if pos_moved < 0 then
+    let conseqs, board' = move_all p_id direction board in
+    let pos_add = match direction with 
+      | Left -> (Array.length board')-1
+      | Right -> 0 in
+    let _ = board'.(pos_add) <- {elem with position = Some pos_add}
+    in conseqs, board'
+  | Move_all (p_id, direction) -> 
+    move_all p_id direction board
 
-                board'.(pos_moved) <- board.(pos_moved)
-            | _ -> board'.(i) <- 
-            | Right -> 
-  | Move_all (p_id, direction) -> assert false
-*)
 
 let remove_killed = 
   Array.map (function 
-      | {killed = true} -> empty_wrap
+      | {killed = true; position} -> { empty_wrap with position }
       | other -> other) 
       
