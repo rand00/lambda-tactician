@@ -21,7 +21,12 @@ open Gametypes
 
 type t = (element_wrap option) array
 
-let make n = Array.make n None
+let make n = 
+  Array.make 
+    (if (n mod 2) <> 0 
+     then failwith "Board.make: N is not even." 
+     else n) 
+    None
 
 let enum = Array.enum
 
@@ -30,28 +35,44 @@ let get_symbol = function
   | _ -> failwith "Board.get_symbol: Can only match on Symbol"
 
 let eval action board = 
-  let board_copy = Array.copy board in
+  let board' = Array.copy board in
   let _ = match action with 
   | Kill (killer, killed) -> 
     let pos = Option.get killed.position 
-    in board_copy.(pos) <- Some {killed with killed = true}
+    in board'.(pos) <- Some {killed with killed = true}
   | Application (lambda, value) -> (match lambda.element with 
       | Lambda (sym_in, sym_out) 
         when sym_in = (get_symbol value.element) -> 
         ( let pos = Option.get lambda.position 
-          in board_copy.(pos) <- Some 
-              { lambda with 
-                element = Symbol sym_out };
+          in board'.(pos) <- Some { lambda with element = Symbol sym_out };
           let pos = Option.get value.position
-          in board_copy.(pos) <- None )
+          in board'.(pos) <- None )
       | _ -> failwith "Board.eval: Application")
-  in board_copy
+  in board'
 
 
 let eval_to_consequence action board = 
   match action with 
-  | Move_all_and_add (direction, elem) -> assert false
-  | Move_all direction -> assert false
+  | Move_all_and_add (p_id, direction, elem) -> 
+    let len = Array.length board in
+    let board' = Array.make len None in
+    let rec aux it_from it_to ~pos_old ~pos_moved ~out_of_bounds = 
+      board'.(len-1) <- elem; (*goto goo*)
+      let conseqs = [] in
+      for i = len-2 to 0 do
+        let pos_old = i+1 
+        in match board.(pos_old) with 
+        | {id = p_id} -> 
+          let pos_moved = i-1 in
+          if pos_moved < 0 then
+
+            board'.(pos_moved) <- board.(pos_moved)
+        | _ -> board'.(i) <- 
+    ( match direction with 
+      | `Left  -> 
+        ( 
+      | `Right -> 
+  | Move_all (p_id, direction) -> assert false
 
 let remove_killed = 
   Array.map (function 
