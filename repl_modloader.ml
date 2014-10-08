@@ -16,6 +16,9 @@ Sys.chdir "..";;
 #load "gametypes.cmo";;
 #load "visualizer.cmo";;
 #load "ai.cmo";;
+#load "player.cmo" ;;
+#load "board.cmo";;
 #load "control.cmo";;
 #load "iinterp.cmo";;
+
 
