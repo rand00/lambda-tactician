@@ -41,8 +41,7 @@ let opposite_direction = function
 
 let next_move gstate = 
   let open Player in
-  let module R = (val gstate.rules)
-  in match gstate.turn with 
+  match gstate.turn with 
   | P0 -> 
     let next_elem = 
       gstate.p0.next_move 
@@ -50,7 +49,7 @@ let next_move gstate =
         gstate.p0.mana
     in { owner = P0;
          element = next_elem;
-         mana_cost = R.return_cost next_elem;
+         mana_cost = 0.;
          killed = false;
          position = None; }
   | P1 -> 
@@ -60,7 +59,7 @@ let next_move gstate =
         gstate.p1.mana
     in { owner = P1;
          element = next_elem;
-         mana_cost = R.return_cost next_elem;
+         mana_cost = 0.;
          killed = false;
          position = None; } 
   | PNone -> failwith "Gstate: PNone is no player"
