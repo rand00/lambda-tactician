@@ -19,11 +19,19 @@ open Batteries
 open Core_rand00 
 open Gametypes
 
-let _ = 
-
+let start () =
+  
   let gstate = {
     winner = None;
     board = Board.make 16;
+
+    element_costs = {
+      lambda = 0.3;
+      symbol = 0.3;
+      empty = 0.0;
+    };
+
+    rules = (module Rules.Basic : Rules.S);
 
     p0 = {
       id = P0; name = "Hansi";
@@ -43,7 +51,12 @@ let _ =
   } 
   
   in Control.gloop gstate
-(*    ~visualizer:Visualizer.termprinter0 *)
+  (*  set  ~visualizer:Visualizer.termprinter0 *)
+
+
+let _ = start ()
+
+
     
     
 
