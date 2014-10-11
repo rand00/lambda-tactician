@@ -21,7 +21,7 @@ open Gametypes
 
 module type S = sig 
   
-  val apply_cost : element_wrap -> element_wrap
+  val apply_cost_to_element : element_wrap -> element_wrap
 
   val return_cost : element -> float
 
@@ -29,7 +29,7 @@ end
 
 module Basic : S = struct 
 
-  let apply_cost gstate = function
+  let apply_cost_to_element gstate = function
     | { element = Lambda _ } as e -> { e with mana_cost = gstate.element_cost.lambda } 
     | { element = Symbol _ } as e -> { e with mana_cost = gstate.element_cost.symbol }
     | { element = Empty } as e -> { e with mana_cost = gstate.element_cost.empty } 

@@ -25,8 +25,8 @@ let gstep gstate =
   let module Rules = (val gstate.rules) in
 
   Gstate.next_player_move gstate 
-  |> Rules.apply_cost gstate
-  |> Rules.is_legal
+  |> Rules.apply_cost_to_element gstate
+  |> Rules.is_element_legal
   |> function
   | `Legal element -> 
 
