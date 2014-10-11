@@ -20,29 +20,57 @@ open Core_rand00
 open Gametypes
 open Gstate
 
-let gstep gstate = gstate
+let gstep gstate = 
 
-  let elem_chosen = Gstate.next_move gstate in 
-  (*< goto wrap in rule for 
-    . mana-cost
-    . legality (enough mana?) !!!
-      . other reason not legal?*)
-  let conseqs, board = 
-    match elem_chosen with (*match on element of wrapper*)
-    | Empty -> 
-      Board.eval_move_to_effect 
-        (Move_all 
-           (gstate.turn, 
-            Gstate.(opposite_direction 
-                      (player_position gstate))))
-    | _ -> assert false
-  in gstate 
+  let module Rules = (val gstate.rules) in
+
+  Gstate.next_player_move gstate 
+  |> Rules.apply_cost gstate
+  |> Rules.is_legal
+  |> function
+  | `Legal element -> 
+
+    begin 
+      let gstate = Rules.update_player_mana 
+          (`From_element element) 
+          gstate in
+
+      let conseqs, board = 
+        Board.move_all_and_add gstate.board element
+          ~elems_owned_by:gstate.turn
+          ~direction:(opposite_direction (player_position gstate)) in
+
+      let actions = List.map 
+          Rules.conseq_to_action 
+          conseqs in
+
+      let board = List.fold_left 
+          Board.eval_action 
+          board 
+          actions in
+
+      let gstate = 
+        ( Rules.update_player_mana 
+            (`From_actions actions) 
+            { gstate with board } )
+        |> Rules.determine_possible_winner
+
+      in gstate
+
+    end
+
+  | `Illegal element ->
+    begin
+
+      let gstate = 
+        Rules.apply_punishment (`Illegal element) gstate
+        |> Rules.determine_possible_winner
+
+      in gstate
+
+    end
 
 
-
-(*goto determine legal turn action based on some new user-action type *)
-
-(*goto: iterate throgh (map) and remove earlier killed elems (they are there for last-turn visuals)*)
 
 (*moving the current players elems*)
 (*goto 
@@ -56,21 +84,13 @@ let gstep gstate = gstate
 
 (*goto calculate mana-costs/-income from 'actions', and later return mana+winner-gamestate*)
 
-(*goto visualize*)
 
-(* some game logic to rewrite::
 
-    Array.fold_left (fun i {element; owner} -> 
-        if owner = gstate.turn then
-          match player_pos gstate owner with
-          | `Left  -> "..."
-          | `Right -> "...")
-      (Array.(make (length gstate.board) Empty), [])
-      gstate.board
-
-  { gstate with 
-    board = Board.eval action board; 
-    turn = (player_opposite gstate.turn) }
+(*------------------------gloop ------------------------*)
+(*goto
+  . implement_visualization here
+  . remove earlier killed elems
+  . switch gstate.turn to other player
 *)
 
 
