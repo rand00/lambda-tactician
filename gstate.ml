@@ -25,6 +25,7 @@ type t = {
   turn : player_id;
   board : Board.t;
   rules : (module Rules.S);
+  element_costs : element_costs;
   winner : player_id option;
 }
 
@@ -39,7 +40,7 @@ let opposite_direction = function
   | Left -> Right
   | Right -> Left
 
-let next_move gstate = 
+let next_player_move gstate = 
   let open Player in
   match gstate.turn with 
   | P0 -> 
