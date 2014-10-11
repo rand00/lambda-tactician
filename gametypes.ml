@@ -25,6 +25,12 @@ type element =
   | Symbol of symbol
   | Empty
 
+type element_costs = {
+  lambda : float;
+  symbol : float;
+  empty : float;
+}
+
 type element_wrap = {
   owner : player_id;
   element : element;
