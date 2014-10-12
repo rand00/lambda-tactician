@@ -20,11 +20,11 @@ open Core_rand00
 open Gametypes
 open Gstate
 
-let gstep gstate = 
+let rec gstep gstate = 
 
   let module Rules = (val gstate.rules) in
 
-  Gstate.next_player_move gstate 
+  Gstate.next_player_element gstate 
   |> Rules.apply_cost_to_element gstate
   |> Rules.is_element_legal
   |> function
@@ -62,11 +62,11 @@ let gstep gstate =
   | `Illegal element ->
     begin
 
-      let gstate = 
-        Rules.apply_punishment (`Illegal element) gstate
-        |> Rules.determine_possible_winner
-
-      in gstate
+      Rules.apply_punishment (`Illegal element) gstate
+      |> Rules.determine_possible_winner
+      |> function
+      | { winner = Some _ } as gstate -> gstate
+      | _ -> gstep gstate (*same players turn*)
 
     end
 
