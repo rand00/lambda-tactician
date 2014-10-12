@@ -73,7 +73,10 @@ module Basic : S = struct
   let update_player_mana_from_actions ~gstate =
     let open Player in 
     match gstate.turn with 
-    | P0 -> List.fold_left 
+    | P0 -> List.fold_left (fun gstate action ->
+        { gstate with 
+          p0 = { gstate.p0 with 
+                 mana = gstate.p0.mana - 
     | P1 -> 
     | PNone -> )
     
