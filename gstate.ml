@@ -29,18 +29,25 @@ type t = {
   winner : player_id option;
 }
 
-let player_position gstate = 
+let current_player_mana ~gstate = 
+  let open Player in 
+  match gstate.turn with 
+  | P0 -> gstate.p0.mana
+  | P1 -> gstate.p1.mana
+  | PNone -> failwith "Gstate: player_mana: PNone is no player"
+
+let player_position ~gstate = 
   let open Player in
   match gstate.turn with
   | P0 -> gstate.p0.position
   | P1 -> gstate.p1.position
-  | PNone -> failwith "Gstate: PNone is no player"
+  | PNone -> failwith "Gstate: player_position: PNone is no player"
 
 let opposite_direction = function
   | Left -> Right
   | Right -> Left
 
-let next_player_element gstate = 
+let next_player_element ~gstate = 
   let open Player in
   match gstate.turn with 
   | P0 -> 
