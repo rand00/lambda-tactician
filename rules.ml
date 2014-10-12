@@ -21,9 +21,23 @@ open Gametypes
 
 module type S = sig 
   
-  val apply_cost_to_element : element_wrap -> element_wrap
+  val apply_cost_to_element : Gstate.t -> element_wrap -> element_wrap
 
   val return_cost : element -> float
+
+  val is_element_legal : Gstate.t -> element_wrap -> 
+    [ `Legal of element_wrap 
+    | `Illegal of element_wrap ]
+
+  val update_player_mana : [ `From_element of element_wrap 
+                           | `From_actions of element_action list ] 
+    -> Gstate.t -> Gstate.t
+                     
+  val conseq_to_action : board_move_conseq -> element_action
+
+  val apply_punishment : element_wrap -> Gstate.t -> Gstate.t
+
+  val determine_possible_winner : Gstate.t -> Gstate.t
 
 end
 
@@ -38,6 +52,8 @@ module Basic : S = struct
     | Lambda _ -> gstate.element_cost.lambda
     | Symbol _ -> gstate.element_cost.symbol
     | Empty -> gstate.element_cost.empty
+
+  let is_element_legal gstate elem = assert false
 
 end
 
