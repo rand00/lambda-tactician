@@ -59,6 +59,6 @@ type board_action =
   | Move_all_and_add of player_id * direction * element_wrap
   | Move_all of player_id * direction
 
-type board_action_conseqs = 
+type board_move_conseq = 
   | Jumpover of element_wrap_active * element_wrap
   | Out_of_bounds of direction * element_wrap 
