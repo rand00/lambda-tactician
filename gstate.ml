@@ -40,7 +40,7 @@ let opposite_direction = function
   | Left -> Right
   | Right -> Left
 
-let next_player_move gstate = 
+let next_player_element gstate = 
   let open Player in
   match gstate.turn with 
   | P0 -> 
