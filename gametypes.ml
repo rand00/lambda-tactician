@@ -31,6 +31,13 @@ type element_costs = {
   empty : float;
 }
 
+type action_value = {
+  kill_lambda : float;
+  kill_symbol : float;
+  move_element : float; (*for harvesting more by having more on the field*)
+  application : float;
+}
+
 type element_wrap = {
   owner : player_id;
   element : element;
