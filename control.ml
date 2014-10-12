@@ -26,7 +26,7 @@ let rec gstep gstate =
 
   Gstate.next_player_element gstate 
   |> Rules.apply_cost_to_element gstate
-  |> Rules.is_element_legal
+  |> Rules.is_element_legal gstate
   |> function
   | `Legal element -> 
 
@@ -55,14 +55,14 @@ let rec gstep gstate =
             { gstate with board } )
         |> Rules.determine_possible_winner
 
-      in gstate
+      in { gstate with turn = (Player.opposite gstate.turn) }
 
     end
 
-  | `Illegal element ->
+  | `Illegal illegal_elem ->
     begin
 
-      Rules.apply_punishment (`Illegal element) gstate
+      Rules.apply_punishment illegal_elem gstate
       |> Rules.determine_possible_winner
       |> function
       | { winner = Some _ } as gstate -> gstate
