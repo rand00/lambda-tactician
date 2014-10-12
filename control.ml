@@ -24,21 +24,21 @@ let rec gstep gstate =
 
   let module Rules = (val gstate.rules) in
 
-  Gstate.next_player_element gstate 
-  |> Rules.apply_cost_to_element gstate
-  |> Rules.is_element_legal gstate
+  Gstate.next_player_element ~gstate 
+  |> Rules.apply_cost_to_element ~gstate
+  |> Rules.is_element_legal ~gstate
   |> function
   | `Legal element -> 
 
     begin 
       let gstate = Rules.update_player_mana 
           (`From_element element) 
-          gstate in
+          ~gstate in
 
       let conseqs, board = 
         Board.move_all_and_add gstate.board element
           ~elems_owned_by:gstate.turn
-          ~direction:(opposite_direction (player_position gstate)) in
+          ~direction:(opposite_direction (player_position ~gstate)) in
 
       let actions = List.map 
           Rules.conseq_to_action 
@@ -50,7 +50,7 @@ let rec gstep gstate =
           actions in
 
       let gstate = 
-        ( Rules.update_player_mana 
+        ( Rules.update_player_mana
             (`From_actions actions) 
             { gstate with board } )
         |> Rules.determine_possible_winner
@@ -62,7 +62,7 @@ let rec gstep gstate =
   | `Illegal illegal_elem ->
     begin
 
-      Rules.apply_punishment illegal_elem gstate
+      Rules.apply_punishment illegal_elem ~gstate
       |> Rules.determine_possible_winner
       |> function
       | { winner = Some _ } as gstate -> gstate
