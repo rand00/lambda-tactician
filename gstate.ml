@@ -19,13 +19,12 @@ open Batteries
 open Core_rand00
 open Gametypes
 
-type t = {
+type t = { (*goto where to put rules?*)
   p0 : Player.t;
   p1 : Player.t;
   turn : player_id;
+  rule_values : rule_values;
   board : Board.t;
-  rules : (module Rules.S);
-  element_costs : element_costs;
   winner : player_id option;
 }
 
