@@ -24,7 +24,7 @@ val enum : t -> Gametypes.element_wrap BatEnum.t
 val eval_action : t -> Gametypes.element_action -> t
 
 val move_to_effect : Gametypes.board_action -> t 
-  -> (Gametypes.board_action_conseqs list) * t
+  -> (Gametypes.board_move_conseq list) * t
 
 val remove_killed : t -> t
 
