@@ -25,19 +25,6 @@ type element =
   | Symbol of symbol
   | Empty
 
-type element_costs = {
-  lambda : float;
-  symbol : float;
-  empty : float;
-}
-
-type action_value = {
-  kill_lambda : float;
-  kill_symbol : float;
-  move_element : float; (*for harvesting more by having more on the field*)
-  application : float;
-}
-
 type element_wrap = {
   owner : player_id;
   element : element;
@@ -52,6 +39,24 @@ let empty_wrap = {
   mana_cost = 0.; 
   killed = false;
   position = None 
+}
+
+type element_value = {
+  lambda : float;
+  symbol : float;
+  empty : float;
+}
+
+type action_value = {
+  kill_lambda : float;
+  kill_symbol : float;
+  move_element : float; (*for harvesting more by having more on the field*)
+  application : float;
+}
+
+type rule_values = {
+  elements : element_value;
+  actions : action_value;
 }
 
 type direction = Left | Right
