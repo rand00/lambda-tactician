@@ -53,23 +53,25 @@ module type R2_Legality = sig
 end
 module type R2Fun_Legality = functor (RCost : R1_Cost) -> R2_Legality
 
-module type R3_Mana = sig
+(*Mana*)
+module type R_Mana = sig
     val update_mana_from_element : gstate:Gstate.t -> element_wrap -> Gstate.t
     val update_mana_from_actions : gstate:Gstate.t -> element_action list -> Gstate.t
 end
-module type R3Fun_Mana = functor (RCost : R1_Cost) -> R3_Mana
+module type RFun_Mana = functor (RCost : R1_Cost) -> R_Mana
 
-module type R4_DepMana = sig
+module type R3_DepMana = sig
   val update_player_mana : gstate:Gstate.t -> 
     [ `From_element of element_wrap 
     | `From_actions of element_action list ] -> Gstate.t
   val apply_punishment : gstate:Gstate.t -> element_wrap -> Gstate.t
 end
-module type R4Fun_DepMana = 
+module type R3Fun_DepMana = 
   functor (RCost : R1_Cost) -> 
-  functor (RMana : R3Fun_Mana) -> R4_DepMana 
+  functor (RMana : RFun_Mana) -> R3_DepMana 
 
-module type R5_Rest = sig
+(*Rest*)
+module type R4_Rest = sig
   val conseq_to_action : board_move_conseq -> element_action
   val determine_possible_winner : gstate:Gstate.t -> Gstate.t  
 end
@@ -79,8 +81,8 @@ end
 module type S = sig
   include R1_Cost
   include R2_Legality
-  include R4_DepMana
-  include R5_Rest
+  include R3_DepMana
+  include R4_Rest
 end  
 
 
@@ -113,7 +115,7 @@ module Basic2_legality =
 
   end
 
-module Basic3_update_mana = 
+module Basic_mana = 
   functor (RCost : R1_Cost) -> struct
 
     open Gstate
@@ -171,9 +173,9 @@ module Basic3_update_mana =
 
   end
 
-module Basic4_dep_mana = 
+module Basic3_dep_mana = 
   functor (RCost : R1_Cost) -> 
-  functor (RManaFun : R3Fun_Mana) -> struct
+  functor (RManaFun : RFun_Mana) -> struct
 
     module RMana = RManaFun(RCost)
 
@@ -186,7 +188,7 @@ module Basic4_dep_mana =
   end
 
 
-module Basic5_rest = struct 
+module Basic4_rest = struct 
   let conseq_to_action conseq = assert false
   let determine_possible_winner ~gstate = assert false
 end
@@ -197,11 +199,8 @@ module Basic : S = struct
 
   include Basic1_cost
   include Basic2_legality(Basic1_cost)
-
-  include Basic3_update_mana(Basic1_cost)
-  include Basic4_dep_mana (Basic1_cost) (Basic3_update_mana)
-
-  include Basic5_rest
+  include Basic3_dep_mana (Basic1_cost) (Basic_mana)
+  include Basic4_rest
 
 end
 
