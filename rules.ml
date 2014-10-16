@@ -71,7 +71,7 @@ module type R3Fun_DepMana =
   functor (RMana : RFun_Mana) -> R3_DepMana 
 
 (*Rest*)
-module type R4_Rest = sig
+module type R4_ActionsPlus = sig
   val conseq_to_action : gstate:Gstate.t -> board_move_conseq -> element_action option
   val determine_possible_winner : gstate:Gstate.t -> Gstate.t  
 end
@@ -82,7 +82,7 @@ module type S = sig
   include R1_Cost
   include R2_Legality
   include R3_DepMana
-  include R4_Rest
+  include R4_ActionsPlus
 end  
 
 
@@ -131,6 +131,13 @@ module Basic_mana =
                        mana = gstate.p1.mana -. elem.mana_cost }}
       | PNone -> failwith "Gstate: update_player_mana: PNone is no player"
 
+    (*goto: 
+      . implement new typecases 
+      . move some boilerplate into Gstate as helpers
+      . remove the any-case -> We wan't to use typesystem to check for as much
+        as possible
+    *)
+    (*goo*)
     let update_mana_from_actions ~gstate =
       let open Player in 
       let open Gstate in
@@ -198,11 +205,11 @@ module Basic3_dep_mana =
   end
 
 
-module Basic4_rest = struct 
+module Basic4_actions_plus = struct 
 
   open Gstate
 
-  (*goo*)
+  (*goto: think over rules *)
   let conseq_to_action ~gstate = function
     | Jumpover ( ({element = jumper} as jumpwrap), 
                  ({element = stander} as standwrap)) -> 
@@ -219,6 +226,11 @@ module Basic4_rest = struct
       else
         Some (At_opponent elem)
 
+  (*goto: implement - 
+    . look at mana
+    . look at which actions should have precedence over others?
+      -> this might be determined from mana set by another func
+  *)
   let determine_possible_winner ~gstate = assert false
 
 end
@@ -230,7 +242,7 @@ module Basic : S = struct
   include Basic1_cost
   include Basic2_legality(Basic1_cost)
   include Basic3_dep_mana (Basic1_cost) (Basic_mana)
-  include Basic4_rest
+  include Basic4_actions_plus
 
 end
 
