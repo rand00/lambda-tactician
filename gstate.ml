@@ -23,7 +23,7 @@ type t = { (*goto where to put rules?*)
   p0 : Player.t;
   p1 : Player.t;
   turn : player_id;
-  rule_values : rule_values;
+  rvalues : Rulestypes.t;
   board : Board.t;
   winner : player_id option;
 }

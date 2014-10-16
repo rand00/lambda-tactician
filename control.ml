@@ -31,6 +31,7 @@ let rec gstep gstate =
   | `Legal element -> 
 
     begin 
+
       let gstate = Rules.update_player_mana 
           (`From_element element) 
           ~gstate in
