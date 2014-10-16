@@ -208,6 +208,7 @@ module Basic3_dep_mana =
 module Basic4_actions_plus = struct 
 
   open Gstate
+  open Player
 
   (*goto: think over rules *)
   let conseq_to_action ~gstate = function
@@ -226,12 +227,14 @@ module Basic4_actions_plus = struct
       else
         Some (At_opponent elem)
 
-  (*goto: implement - 
-    . look at mana
-    . look at which actions should have precedence over others?
-      -> this might be determined from mana set by another func
-  *)
-  let determine_possible_winner ~gstate = assert false
+  let determine_possible_winner ~gstate =
+    let p0m, p1m = gstate.p0.mana, gstate.p1.mana 
+    in
+    if p0m <= p1m then 
+      if p0m <= 0. then { gstate with winner = Some P1 } else gstate
+    else if p1m < p0m then 
+      if p1m <= 0. then { gstate with winner = Some P0 } else gstate
+    else gstate
 
 end
 
