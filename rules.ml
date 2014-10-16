@@ -72,7 +72,7 @@ module type R3Fun_DepMana =
 
 (*Rest*)
 module type R4_Rest = sig
-  val conseq_to_action : board_move_conseq -> element_action
+  val conseq_to_action : gstate:Gstate.t -> board_move_conseq -> element_action option
   val determine_possible_winner : gstate:Gstate.t -> Gstate.t  
 end
 
@@ -199,8 +199,28 @@ module Basic3_dep_mana =
 
 
 module Basic4_rest = struct 
-  let conseq_to_action conseq = assert false
+
+  open Gstate
+
+  (*goo*)
+  let conseq_to_action ~gstate = function
+    | Jumpover ( ({element = jumper} as jumpwrap), 
+                 ({element = stander} as standwrap)) -> 
+      ( match jumper, stander with 
+        | Lambda (i,o), Symbol s when i = s -> Some (Application (jumpwrap, standwrap))
+        | Lambda (_,_), Symbol _ -> Some (Kill (standwrap, jumpwrap))
+        | Symbol X, Symbol Z
+        | Symbol Y, Symbol X
+        | Symbol Z, Symbol Y -> Some (Kill (jumpwrap, standwrap))
+        | _ -> None )
+    | Out_of_bounds (direction, elem) -> 
+      if direction = (player_position ~gstate) then 
+        Some (At_home elem)
+      else
+        Some (At_opponent elem)
+
   let determine_possible_winner ~gstate = assert false
+
 end
 
 
