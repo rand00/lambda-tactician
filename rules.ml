@@ -178,12 +178,22 @@ module Basic3_dep_mana =
   functor (RManaFun : RFun_Mana) -> struct
 
     module RMana = RManaFun(RCost)
+    open Gstate
+    open Player
 
     let update_player_mana ~gstate = function
       | `From_element element -> RMana.update_mana_from_element ~gstate element
       | `From_actions actions -> RMana.update_mana_from_actions ~gstate actions
 
-    let apply_punishment ~gstate illegal_elem = assert false
+    let apply_punishment ~gstate illegal_elem = 
+      match gstate.turn with 
+      | P0 -> { gstate with 
+                p0 = { gstate.p0 with
+                       mana = gstate.p0.mana -. illegal_elem.mana_cost }}
+      | P1 -> { gstate with 
+                p1 = { gstate.p1 with
+                       mana = gstate.p1.mana -. illegal_elem.mana_cost }}
+      | PNone -> failwith "Rules:apply_punishment: PNone is no player."
 
   end
 
