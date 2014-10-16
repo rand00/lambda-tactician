@@ -41,8 +41,8 @@ let rec gstep gstate =
           ~elems_owned_by:gstate.turn
           ~direction:(opposite_direction (player_position ~gstate)) in
 
-      let actions = List.map 
-          Rules.conseq_to_action 
+      let actions = List.filter_map 
+          Rules.conseq_to_action ~gstate
           conseqs in
 
       let board = List.fold_left 
