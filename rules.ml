@@ -35,51 +35,54 @@ let std_values = {
   };
 }
 
-(**Signature for the collection of rules-functions put together as first-class module.*)
-module type S = sig
-  val return_cost : gstate:Gstate.t -> element -> float
-  val apply_cost_to_element : gstate:Gstate.t -> element_wrap -> element_wrap
-  val is_element_legal : gstate:Gstate.t -> element_wrap -> 
-    [ `Legal of element_wrap 
-    | `Illegal of element_wrap ]
-  val update_player_mana : gstate:Gstate.t -> 
-    [ `From_element of element_wrap 
-    | `From_actions of element_action list ] 
-    -> Gstate.t
-  val apply_punishment : gstate:Gstate.t -> element_wrap -> Gstate.t
-  val conseq_to_action : board_move_conseq -> element_action
-  val determine_possible_winner : gstate:Gstate.t -> Gstate.t  
-end  
 
-
-(**Types of the functor arg's*)
+(**Types of the subfunctors of a full ruleset
+   -> these are actually not neccesary for the Basic rules module,
+      but they serve to propose the structure for future (possibly)
+      more complex rulesets. 
+*)
 module type R1_Cost = sig 
   val return_cost : gstate:Gstate.t -> element -> float
   val apply_cost_to_element : gstate:Gstate.t -> element_wrap -> element_wrap
 end
 
-(* > are the following sig's neccesary?
-module type R2_Legality = 
-  functor (RCost : R1_Cost) -> sig 
-    val is_element_legal : gstate:Gstate.t -> element_wrap -> 
-      [ `Legal of element_wrap 
-      | `Illegal of element_wrap ]
-  end
+module type R2_Legality = sig
+  val is_element_legal : gstate:Gstate.t -> element_wrap -> 
+    [ `Legal of element_wrap 
+    | `Illegal of element_wrap ]
+end
+module type R2Fun_Legality = functor (RCost : R1_Cost) -> R2_Legality
 
-module type R3_Mana = 
-  functor (RCost : R1_Cost) -> sig
-    val update_player_mana : gstate:Gstate.t -> 
-      [ `From_element of element_wrap 
-      | `From_actions of element_action list ] 
-      -> Gstate.t
-    val apply_punishment : gstate:Gstate.t -> element_wrap -> Gstate.t
-  end
+module type R3_Mana = sig
+    val update_mana_from_element : gstate:Gstate.t -> element_wrap -> Gstate.t
+    val update_mana_from_actions : gstate:Gstate.t -> element_action list -> Gstate.t
+end
+module type R3Fun_Mana = functor (RCost : R1_Cost) -> R3_Mana
 
-module type R4_Rest = sig
+module type R4_DepMana = sig
+  val update_player_mana : gstate:Gstate.t -> 
+    [ `From_element of element_wrap 
+    | `From_actions of element_action list ] -> Gstate.t
+  val apply_punishment : gstate:Gstate.t -> element_wrap -> Gstate.t
+end
+module type R4Fun_DepMana = 
+  functor (RCost : R1_Cost) -> 
+  functor (RMana : R3Fun_Mana) -> R4_DepMana 
+
+module type R5_Rest = sig
   val conseq_to_action : board_move_conseq -> element_action
   val determine_possible_winner : gstate:Gstate.t -> Gstate.t  
 end
-*)
+
+
+(**Signature for the collection of rules-functions put together as first-class module.*)
+module type S = sig
+  include R1_Cost
+  include R2_Legality
+  include R4_DepMana
+  include R5_Rest
+end  
+
 
 (**Basic implementation of rules - these can be mixed with custom sub-modules,
    resulting in a customly composed ruleset.*)
@@ -108,14 +111,14 @@ module Basic2_legality =
       then `Legal elem
       else `Illegal elem
 
-end
+  end
 
 module Basic3_update_mana = 
   functor (RCost : R1_Cost) -> struct
 
     open Gstate
 
-    let update_player_mana_from_element ~gstate elem =
+    let update_mana_from_element ~gstate elem =
       let open Player in 
       match gstate.turn with 
       | P0 -> { gstate with 
@@ -126,8 +129,9 @@ module Basic3_update_mana =
                        mana = gstate.p1.mana -. elem.mana_cost }}
       | PNone -> failwith "Gstate: update_player_mana: PNone is no player"
 
-    let update_player_mana_from_actions ~gstate =
+    let update_mana_from_actions ~gstate =
       let open Player in 
+      let open Gstate in
       List.fold_left (fun gstate -> function
           | Kill ( { owner = P0; element=killer } , 
                    { owner = P1; element=killed } ) -> 
@@ -135,8 +139,8 @@ module Basic3_update_mana =
               p0 = { gstate.p0 with 
                      mana = gstate.p0.mana +. 
                             (match killed with 
-                             | Lambda _ -> rule_values.actions.kill_lambda 
-                             | Symbol _ -> rule_values.actions.kill_symbol
+                             | Lambda _ -> gstate.rvalues.actions.kill_lambda 
+                             | Symbol _ -> gstate.rvalues.actions.kill_symbol
                              | _ -> 0. ) }}
 
           | Kill ( { owner = P1; element=killer }, 
@@ -145,47 +149,59 @@ module Basic3_update_mana =
               p1 = { gstate.p1 with
                      mana = gstate.p1.mana +. 
                             (match killed with
-                             | Lambda _ -> rule_values.actions.kill_lambda
-                             | Symbol _ -> rule_values.actions.kill_symbol
+                             | Lambda _ -> gstate.rvalues.actions.kill_lambda
+                             | Symbol _ -> gstate.rvalues.actions.kill_symbol
                              | _ -> 0. ) }}
 
           | Application ({owner = P0; element=(Lambda _)}, 
                          {owner = P1; element=(Symbol _)}) -> 
             { gstate with 
               p0 = { gstate.p0 with 
-                     mana = gstate.p0.mana +. rule_values.actions.application }}
+                     mana = gstate.p0.mana +. gstate.rvalues.actions.application }}
 
           | Application ({owner = P1; element=(Lambda _)}, 
                          {owner = P0; element=(Symbol _)}) -> 
             { gstate with 
               p1 = { gstate.p1 with 
-                     mana = gstate.p1.mana +. rule_values.actions.application }}
+                     mana = gstate.p1.mana +. gstate.rvalues.actions.application }}
 
           | _ -> failwith "Rules:update_player_mana_from_actions: Wrong input"
 
         ) gstate 
 
+  end
+
+module Basic4_dep_mana = 
+  functor (RCost : R1_Cost) -> 
+  functor (RManaFun : R3Fun_Mana) -> struct
+
+    module RMana = RManaFun(RCost)
 
     let update_player_mana ~gstate = function
-      | `From_element element -> update_player_mana_from_element ~gstate element
-      | `From_actions actions -> update_player_mana_from_actions ~gstate actions
+      | `From_element element -> RMana.update_mana_from_element ~gstate element
+      | `From_actions actions -> RMana.update_mana_from_actions ~gstate actions
 
     let apply_punishment ~gstate illegal_elem = assert false
 
   end
 
-module Basic4_rest = struct 
+
+module Basic5_rest = struct 
   let conseq_to_action conseq = assert false
   let determine_possible_winner ~gstate = assert false
 end
 
 
+(**Final composed Basic module - this is the standard module to be used as first class module*)
 module Basic : S = struct 
 
   include Basic1_cost
   include Basic2_legality(Basic1_cost)
+
   include Basic3_update_mana(Basic1_cost)
-  include Basic4_rest
+  include Basic4_dep_mana (Basic1_cost) (Basic3_update_mana)
+
+  include Basic5_rest
 
 end
 
