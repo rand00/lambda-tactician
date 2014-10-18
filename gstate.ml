@@ -18,6 +18,7 @@
 open Batteries
 open Core_rand00
 open Gametypes
+open Player 
 
 type t = { (*goto where to put rules?*)
   p0 : Player.t;
@@ -29,14 +30,12 @@ type t = { (*goto where to put rules?*)
 }
 
 let current_player_mana ~gstate = 
-  let open Player in 
   match gstate.turn with 
   | P0 -> gstate.p0.mana
   | P1 -> gstate.p1.mana
   | PNone -> failwith "Gstate: player_mana: PNone is no player"
 
 let player_position ~gstate = 
-  let open Player in
   match gstate.turn with
   | P0 -> gstate.p0.position
   | P1 -> gstate.p1.position
@@ -47,7 +46,6 @@ let opposite_direction = function
   | Right -> Left
 
 let next_player_element ~gstate = 
-  let open Player in
   match gstate.turn with 
   | P0 -> 
     let next_elem = 
@@ -71,7 +69,7 @@ let next_player_element ~gstate =
          position = None; } 
   | PNone -> failwith "Gstate: PNone is no player"
 
-let add_player_mana ~gstate pid = 
+let add_player_mana ~gstate pid diff = 
   match pid with 
   | P0 ->
     { gstate with 
@@ -81,4 +79,4 @@ let add_player_mana ~gstate pid =
     { gstate with 
       p1 = { gstate.p1 with
              mana = gstate.p1.mana +. diff }}
-  | P0 -> failwith "Gstate:update_player_mana:PNone is no player."
+  | PNone -> failwith "Gstate:update_player_mana:PNone is no player."

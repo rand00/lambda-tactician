@@ -143,8 +143,8 @@ module Basic_mana =
                    | Symbol _ -> gstate.rvalues.actions.kill_symbol
                    | _ -> 0. )
 
-          | Application ({ element=(Lambda _) } as lambda, 
-                         { element=(Symbol _) } as symbol ) -> 
+          | Application (({ element=(Lambda _) } as lambda), 
+                         ({ element=(Symbol _) } )) -> 
             Gstate.add_player_mana ~gstate lambda.owner
               gstate.rvalues.actions.application
 
