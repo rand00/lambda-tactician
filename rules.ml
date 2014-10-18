@@ -131,50 +131,32 @@ module Basic_mana =
                        mana = gstate.p1.mana -. elem.mana_cost }}
       | PNone -> failwith "Gstate: update_player_mana: PNone is no player"
 
-    (*goto: 
-      . implement new typecases 
-      . move some boilerplate into Gstate as helpers
-      . remove the any-case -> We wan't to use typesystem to check for as much
-        as possible
-    *)
-    (*goo*)
     let update_mana_from_actions ~gstate =
       let open Player in 
       let open Gstate in
       List.fold_left (fun gstate -> function
-          | Kill ( { owner = P0; element=killer } , 
-                   { owner = P1; element=killed } ) -> 
-            { gstate with 
-              p0 = { gstate.p0 with 
-                     mana = gstate.p0.mana +. 
-                            (match killed with 
-                             | Lambda _ -> gstate.rvalues.actions.kill_lambda 
-                             | Symbol _ -> gstate.rvalues.actions.kill_symbol
-                             | _ -> 0. ) }}
 
-          | Kill ( { owner = P1; element=killer }, 
-                   { owner = P0; element=killed } ) -> 
-            { gstate with 
-              p1 = { gstate.p1 with
-                     mana = gstate.p1.mana +. 
-                            (match killed with
-                             | Lambda _ -> gstate.rvalues.actions.kill_lambda
-                             | Symbol _ -> gstate.rvalues.actions.kill_symbol
-                             | _ -> 0. ) }}
+          | Kill ( killer, killed ) -> 
+            Gstate.add_player_mana ~gstate killer.owner
+              (match killed.element with 
+                   | Lambda _ -> gstate.rvalues.actions.kill_lambda 
+                   | Symbol _ -> gstate.rvalues.actions.kill_symbol
+                   | _ -> 0. )
 
-          | Application ({owner = P0; element=(Lambda _)}, 
-                         {owner = P1; element=(Symbol _)}) -> 
-            { gstate with 
-              p0 = { gstate.p0 with 
-                     mana = gstate.p0.mana +. gstate.rvalues.actions.application }}
+          | Application ({ element=(Lambda _) } as lambda, 
+                         { element=(Symbol _) } as symbol ) -> 
+            Gstate.add_player_mana ~gstate lambda.owner
+              gstate.rvalues.actions.application
 
-          | Application ({owner = P1; element=(Lambda _)}, 
-                         {owner = P0; element=(Symbol _)}) -> 
-            { gstate with 
-              p1 = { gstate.p1 with 
-                     mana = gstate.p1.mana +. gstate.rvalues.actions.application }}
+          | Application _ -> failwith "Rules:update_player_mana_from_actions: Wrong input"
 
-          | _ -> failwith "Rules:update_player_mana_from_actions: Wrong input"
+          | At_opponent elem -> 
+            Gstate.add_player_mana ~gstate elem.owner
+              elem.mana_cost
+
+          | At_home elem -> 
+            Gstate.add_player_mana ~gstate elem.owner
+              elem.mana_cost
 
         ) gstate 
 
@@ -222,10 +204,9 @@ module Basic4_actions_plus = struct
         | Symbol Z, Symbol Y -> Some (Kill (jumpwrap, standwrap))
         | _ -> None )
     | Out_of_bounds (direction, elem) -> 
-      if direction = (player_position ~gstate) then 
-        Some (At_home elem)
-      else
-        Some (At_opponent elem)
+      if direction = (player_position ~gstate) 
+      then Some (At_home elem)
+      else Some (At_opponent elem)
 
   let determine_possible_winner ~gstate =
     let p0m, p1m = gstate.p0.mana, gstate.p1.mana 
