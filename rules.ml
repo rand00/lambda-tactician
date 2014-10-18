@@ -73,7 +73,7 @@ module type R3Fun_DepMana =
 (*Rest*)
 module type R4_ActionsPlus = sig
   val conseq_to_action : gstate:Gstate.t -> board_move_conseq -> element_action option
-  val determine_possible_winner : gstate:Gstate.t -> Gstate.t  
+  val determine_possible_winner : Gstate.t -> Gstate.t  
 end
 
 
@@ -191,7 +191,7 @@ module Basic4_actions_plus = struct
       then Some (At_home elem)
       else Some (At_opponent elem)
 
-  let determine_possible_winner ~gstate =
+  let determine_possible_winner gstate =
     let p0m, p1m = gstate.p0.mana, gstate.p1.mana 
     in
     if p0m <= p1m then 
