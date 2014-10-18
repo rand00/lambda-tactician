@@ -71,4 +71,14 @@ let next_player_element ~gstate =
          position = None; } 
   | PNone -> failwith "Gstate: PNone is no player"
 
-
+let add_player_mana ~gstate pid = 
+  match pid with 
+  | P0 ->
+    { gstate with 
+      p0 = { gstate.p0 with
+             mana = gstate.p0.mana +. diff }}
+  | P1 ->
+    { gstate with 
+      p1 = { gstate.p1 with
+             mana = gstate.p1.mana +. diff }}
+  | P0 -> failwith "Gstate:update_player_mana:PNone is no player."
