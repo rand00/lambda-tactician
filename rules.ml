@@ -93,15 +93,13 @@ module Basic1_cost : R1_Cost = struct
 
   open Gstate
 
-  let apply_cost_to_element ~gstate = function
-    | { element = Lambda _ } as e -> { e with mana_cost = gstate.rvalues.elements.lambda }
-    | { element = Symbol _ } as e -> { e with mana_cost = gstate.rvalues.elements.symbol }
-    | { element = Empty } as e -> { e with mana_cost = gstate.rvalues.elements.empty } 
-
   let return_cost ~gstate = function
     | Lambda _ -> gstate.rvalues.elements.lambda
     | Symbol _ -> gstate.rvalues.elements.symbol
     | Empty -> gstate.rvalues.elements.empty
+
+  let apply_cost_to_element ~gstate e = 
+    { e with mana_cost = return_cost ~gstate e.element } 
 
 end
 
@@ -121,15 +119,8 @@ module Basic_mana =
     open Gstate
 
     let update_mana_from_element ~gstate elem =
-      let open Player in 
-      match gstate.turn with 
-      | P0 -> { gstate with 
-                p0 = { gstate.p0 with 
-                       mana = gstate.p0.mana -. elem.mana_cost }}
-      | P1 -> { gstate with 
-                p1 = { gstate.p1 with 
-                       mana = gstate.p1.mana -. elem.mana_cost }}
-      | PNone -> failwith "Gstate: update_player_mana: PNone is no player"
+      Gstate.add_player_mana ~gstate gstate.turn 
+        (Float.neg elem.mana_cost)
 
     let update_mana_from_actions ~gstate =
       let open Player in 
@@ -174,15 +165,7 @@ module Basic3_dep_mana =
       | `From_element element -> RMana.update_mana_from_element ~gstate element
       | `From_actions actions -> RMana.update_mana_from_actions ~gstate actions
 
-    let apply_punishment ~gstate illegal_elem = 
-      match gstate.turn with 
-      | P0 -> { gstate with 
-                p0 = { gstate.p0 with
-                       mana = gstate.p0.mana -. illegal_elem.mana_cost }}
-      | P1 -> { gstate with 
-                p1 = { gstate.p1 with
-                       mana = gstate.p1.mana -. illegal_elem.mana_cost }}
-      | PNone -> failwith "Rules:apply_punishment: PNone is no player."
+    let apply_punishment = RMana.update_mana_from_element
 
   end
 
