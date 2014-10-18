@@ -20,9 +20,9 @@ open Core_rand00
 open Gametypes
 open Gstate
 
-let rec gstep gstate = 
+let rec gstep gstate rules = 
 
-  let module Rules = (val gstate.rules) in
+  let module Rules = (val rules : Rules.S) in
 
   Gstate.next_player_element ~gstate 
   |> Rules.apply_cost_to_element ~gstate
@@ -42,7 +42,7 @@ let rec gstep gstate =
           ~direction:(opposite_direction (player_position ~gstate)) in
 
       let actions = List.filter_map 
-          Rules.conseq_to_action ~gstate
+          (Rules.conseq_to_action ~gstate)
           conseqs in
 
       let board = List.fold_left 
@@ -51,9 +51,9 @@ let rec gstep gstate =
           actions in
 
       let gstate = 
-        ( Rules.update_player_mana
-            (`From_actions actions) 
-            { gstate with board } )
+        Rules.update_player_mana
+          (`From_actions actions) 
+          ~gstate:{ gstate with board }
         |> Rules.determine_possible_winner
 
       in { gstate with turn = (Player.opposite gstate.turn) }
@@ -67,36 +67,13 @@ let rec gstep gstate =
       |> Rules.determine_possible_winner
       |> function
       | { winner = Some _ } as gstate -> gstate
-      | _ -> gstep gstate (*same players turn*)
+      | _ -> gstep gstate rules (*same players turn*)
 
     end
 
 
-
-(*moving the current players elems*)
-(*goto 
-  . only do this if owner-actions allows (a path in the user-action tree; make new type)
-  . return actions + new-array*)
-(*goto rewrite ; 
-  match on input-actions (based on rules)
-  . don't control direction from here - let rules-mod choose and pmatch!
-  . let rules-mod return the action to be done on some*)
-(*goto action allows for it; add new elem from curr player (if relevant) + add this to actions*)
-
-(*goto calculate mana-costs/-income from 'actions', and later return mana+winner-gamestate*)
-
-
-
-(*------------------------gloop ------------------------*)
-(*goto
-  . implement_visualization here
-  . remove earlier killed elems
-  . switch gstate.turn to other player
-*)
-
-
-(* ~rules ~visualizer ~iinterp ; firstclass mod's*)
-let gloop gstate_init = 
+(* ~visualizer ~iinterp ; firstclass mod's*)
+let gloop gstate_init rules = 
   let open Player in
   let rec aux = function
     | { winner = Some player; p0; p1 } -> 
@@ -104,7 +81,7 @@ let gloop gstate_init =
        | P0 -> print_endline ("And the winner is "^p0.name^"!")
        | P1 -> print_endline ("And the winner is "^p1.name^"!")
        | PNone -> failwith "Control: Ehm.. something wen't wrong.")
-    | gstate -> aux (gstep gstate)
+    | gstate -> aux (gstep gstate rules)
   in 
   aux gstate_init
 
