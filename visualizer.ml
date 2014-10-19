@@ -21,7 +21,7 @@ open Core_rand00
 open Gametypes
 
 module type S = sig 
-  val board : gstate:Gstate.t -> unit
+  val board : Gstate.t -> unit
 end
 
 module Basic : S = struct 
@@ -39,7 +39,7 @@ module Basic : S = struct
     | Symbol s -> [ fill; str_of_sym s; fill ]
     | Empty -> List.make 3 fill
 
-  let board ~gstate = 
+  let board gstate = 
     let elems = List.of_enum (Board.enum gstate.board) in
     let board = String.concat ""
         (List.concat 
@@ -47,7 +47,7 @@ module Basic : S = struct
                 [sep] :: (str_of_elem elem.element) :: acc )
              ) elems [[sep]] )) in
     let full = ((*"\r" ^*) board)
-    in print_string full
+    in print_endline full
 
 end
 
