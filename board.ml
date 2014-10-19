@@ -57,40 +57,34 @@ let eval_action board action =
 let move_all p_id direction board = 
   let len = Array.length board in
   Array.fold_left (fun (conseqs, board') elem -> 
-      match elem with
-      | {owner} when owner = p_id-> ( match direction with
 
-          | Left -> 
-            let pos_to = (Option.get elem.position)-2 in
-            let pos_over = pos_to+1 in
-            let elem' = { elem with position = Some pos_to} in
-
-            if pos_to < 0 then 
-              ((Out_of_bounds (Left, elem')) :: conseqs,
-               board')
-            else 
-              ( if board'.(pos_to).element <> Empty then
-                  failwith "Board:move_all: overwriting an non-empty element."
-                else
-                  ( board'.(pos_to) <- elem';
-                    ((Jumpover (elem', board.(pos_over))) :: conseqs,
-                     board')))
-
-          | Right -> 
-            let pos_to = (Option.get elem.position)+2 in
-            let pos_over = pos_to-1 in
-            let elem' = {elem with position = Some pos_to} in
-
-            if pos_to >= len then
-              ((Out_of_bounds (Right, elem')) :: conseqs,
-               board')
+      let aux_move1 ~jmp_pos ~over_pos ~oobounds = 
+        let elem' = { elem with position = Some jmp_pos} in
+        if oobounds then 
+          ((Out_of_bounds (Left, elem')) :: conseqs,
+           board')
+        else 
+          ( if board'.(jmp_pos).element <> Empty then
+              failwith "Board:move_all: overwriting an non-empty element."
             else
-              ( if board'.(pos_to).element <> Empty then
-                  failwith "Board:move_all: overwriting an non-empty element."
-                else
-                  ( board'.(pos_to) <- elem';
-                    ((Jumpover (elem', board.(pos_over))) :: conseqs ,
-                     board'))))
+              ( board'.(jmp_pos) <- elem';
+                ((Jumpover (elem', board.(over_pos))) :: conseqs,
+                 board')))
+
+      in match elem with
+      | {owner} when owner = p_id-> ( match direction with
+          | Left -> 
+            let jmp_pos = (Option.get elem.position)-2 
+            in aux_move1
+              ~jmp_pos
+              ~over_pos:(jmp_pos+1)
+              ~oobounds:(jmp_pos < 0)
+          | Right -> 
+            let jmp_pos = (Option.get elem.position)+2 
+            in aux_move1
+              ~jmp_pos
+              ~over_pos:(jmp_pos+1)
+              ~oobounds:(jmp_pos >= len))
 
       | {element} as elem when element <> Empty -> 
         let pos = Option.get elem.position in
@@ -113,7 +107,7 @@ let move_all_and_add board elem ~elems_owned_by ~direction =
   in conseqs, board'
 
 
-let remove_killed = 
+let remove_killed_elems = 
   Array.map (function 
       | {killed = true; position} -> { empty_wrap with position }
       | other -> other) 
