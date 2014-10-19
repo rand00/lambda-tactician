@@ -15,6 +15,8 @@ Sys.chdir "..";;
 (*lambdatactician modules*)
 #load "gametypes.cmo";;
 #load "visualizer.cmo";;
+#load "rulestypes.cmo";;
+#load "gstate.cmo" ;;
 #load "ai.cmo";;
 #load "player.cmo" ;;
 #load "rules.cmo";;
