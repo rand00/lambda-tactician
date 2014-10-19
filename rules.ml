@@ -187,7 +187,7 @@ module Basic4_actions_plus = struct
         | Symbol Z, Symbol Y -> Some (Kill (jumpwrap, standwrap))
         | _ -> None )
     | Out_of_bounds (direction, elem) -> 
-      if direction = (player_position ~gstate) 
+      if direction = (current_player_position ~gstate) 
       then Some (At_home elem)
       else Some (At_opponent elem)
 

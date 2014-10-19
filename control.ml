@@ -40,7 +40,7 @@ let rec gameturn gstate ~rules ~visualizer =
       let conseqs, board = 
         Board.move_all_and_add gstate.board element
           ~elems_owned_by:gstate.turn
-          ~direction:(opposite_direction (player_position ~gstate)) in
+          ~direction:(opposite_direction (current_player_position ~gstate)) in
 
       let actions = List.filter_map 
           (Rules.conseq_to_action ~gstate)

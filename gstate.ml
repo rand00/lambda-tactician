@@ -29,17 +29,26 @@ type t = { (*goto where to put rules?*)
   winner : player_id option;
 }
 
-let current_player_mana ~gstate = 
-  match gstate.turn with 
+let player_name ~gstate = function
+  | P0 -> gstate.p0.name
+  | P1 -> gstate.p1.name
+  | PNone -> failwith "Gstate:player_name: PNone no player."
+
+let player_mana ~gstate = function
   | P0 -> gstate.p0.mana
   | P1 -> gstate.p1.mana
-  | PNone -> failwith "Gstate: player_mana: PNone is no player"
+  | PNone -> failwith "Gstate:player_mana: PNone is no player"
 
-let player_position ~gstate = 
-  match gstate.turn with
+let current_player_mana ~gstate = 
+  player_mana ~gstate gstate.turn
+
+let player_position ~gstate = function
   | P0 -> gstate.p0.position
   | P1 -> gstate.p1.position
   | PNone -> failwith "Gstate: player_position: PNone is no player"
+
+let current_player_position ~gstate = 
+  player_position ~gstate gstate.turn
 
 let opposite_direction = function
   | Left -> Right
