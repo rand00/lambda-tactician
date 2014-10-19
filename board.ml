@@ -37,18 +37,20 @@ let get_symbol = function
 
 let eval_action board action = 
   let board' = Array.copy board in
-  let _ = match action with 
-  | Kill (killer, killed) -> 
-    let pos = Option.get killed.position 
-    in board'.(pos) <- {killed with killed = true}
-  | Application (lambda, value) -> (match lambda.element with 
-      | Lambda (sym_in, sym_out) 
-        when sym_in = (get_symbol value.element) -> 
-        ( let pos = Option.get lambda.position 
-          in board'.(pos) <- { lambda with element = Symbol sym_out };
-          let pos = Option.get value.position
-          in board'.(pos) <- empty_wrap )
-      | _ -> failwith "Board.eval: Application")
+  let _ = 
+    ( match action with 
+      | Kill (killer, killed) -> 
+        let pos = Option.get killed.position 
+        in board'.(pos) <- {killed with killed = true}
+      | Application (lambda, value) -> (match lambda.element with 
+          | Lambda (sym_in, sym_out) 
+            when sym_in = (get_symbol value.element) -> 
+            ( let pos = Option.get lambda.position 
+              in board'.(pos) <- { lambda with element = Symbol sym_out };
+              let pos = Option.get value.position
+              in board'.(pos) <- empty_wrap )
+          | _ -> failwith "Board.eval: Application")
+      | At_home elem | At_opponent elem -> () )
   in board'
 
 
@@ -88,7 +90,7 @@ let move_all p_id direction board =
     ) [] board 
   in conseqs, board'
 
-let move_all_and_add board element ~elems_owned_by ~direction = 
+let move_all_and_add board elem ~elems_owned_by ~direction = 
   let conseqs, board' = move_all elems_owned_by direction board in
   let pos_add = match direction with 
     | Left -> (Array.length board')-1
