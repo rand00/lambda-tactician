@@ -29,16 +29,13 @@ module Basic : S = struct
   open Gstate
   open Player
 
-  let str_of_sym = function 
-    | X -> "x" | Y -> "y" | Z -> "z"
-
   let sep, fill = "|", "_" 
   let mana_fill = "."
   let mana_bar = "|"
 
-  let str_of_elem = function 
-    | Lambda (s0, s1) -> [ str_of_sym s0; "."; str_of_sym s1 ]
-    | Symbol s -> [ fill; str_of_sym s; fill ]
+  let strlst_of_elem = function 
+    | Lambda (s0, s1) -> [ symbol_to_str s0; "."; symbol_to_str s1 ]
+    | Symbol sym -> [ fill; symbol_to_str sym; fill ]
     | Empty -> List.make 3 fill
 
   let str_of_pname ~gstate lim pid = 
@@ -50,9 +47,9 @@ module Basic : S = struct
   let str_of_pmana ~gstate len_full pid = 
     let mana = Gstate.player_mana ~gstate pid in
     let nbars = Int.of_float (mana *. (Float.of_int len_full)) in
-    let pdirect = Gstate.player_position ~gstate pid 
+    let ppos = Gstate.player_position ~gstate pid 
     in
-    "[" :: ( match pdirect with
+    "[" :: ( match ppos with
         | Left -> 
           List.fold_righti (fun i s acc ->
               if nbars > i then 
@@ -75,12 +72,12 @@ module Basic : S = struct
     let board_str = String.concat ""
         (List.concat 
            ((List.fold_right (fun elem acc -> 
-                [sep] :: (str_of_elem elem.element) :: acc )
+                [sep] :: (strlst_of_elem elem.element) :: acc )
              ) elems [[sep]] )) in
     let full = String.concat ""
         [ str_of_pmana ~gstate len_mana P0;
           str_of_pname ~gstate len_name P0;
-          board_str;
+          " "; board_str; " ";
           str_of_pname ~gstate len_name P1;
           str_of_pmana ~gstate len_mana P1 ]
     in 
