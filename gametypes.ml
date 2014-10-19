@@ -25,6 +25,14 @@ type element =
   | Symbol of symbol
   | Empty
 
+let symbol_to_str = function
+  | X -> "x" | Y -> "y" | Z -> "z"
+
+let element_to_str = function 
+  | Lambda (s0, s1) -> "lambda:"^(symbol_to_str s0)^"."^(symbol_to_str s1)
+  | Symbol sym -> "sym:"^(symbol_to_str sym)
+  | Empty -> "empty"
+
 type element_wrap = {
   owner : player_id;
   element : element;
