@@ -20,7 +20,7 @@ open Core_rand00
 open Gametypes
 open Gstate
 
-let rec gstep gstate rules = 
+let rec gameturn gstate rules = 
 
   let module Rules = (val rules : Rules.S) in
 
@@ -67,7 +67,7 @@ let rec gstep gstate rules =
       |> Rules.determine_possible_winner
       |> function
       | { winner = Some _ } as gstate -> gstate
-      | _ -> gstep gstate rules (*same players turn*)
+      | _ -> gameturn gstate rules (*..same players turn*)
 
     end
 
@@ -75,13 +75,13 @@ let rec gstep gstate rules =
 (* ~visualizer ~iinterp ; firstclass mod's*)
 let gloop gstate_init rules = 
   let open Player in
-  let rec aux = function
+  let rec loop_if_no_winner = function
     | { winner = Some player; p0; p1 } -> 
       (match player with 
        | P0 -> print_endline ("And the winner is "^p0.name^"!")
        | P1 -> print_endline ("And the winner is "^p1.name^"!")
        | PNone -> failwith "Control: Ehm.. something wen't wrong.")
-    | gstate -> aux (gstep gstate rules)
+    | gstate -> loop_if_no_winner (gameturn gstate rules)
   in 
-  aux gstate_init
+  loop_if_no_winner gstate_init
 
