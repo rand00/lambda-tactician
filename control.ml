@@ -23,7 +23,7 @@ open Gstate
 let rec gameturn gstate ~rules ~visualizer = 
 
   let module Rules = (val rules : Rules.S) in
-  let module Visual = (val visualizer : Visualizer.S) in
+  let module Visualize = (val visualizer : Visualizer.S) in
 
   Gstate.next_player_element ~gstate 
   |> Rules.apply_cost_to_element ~gstate
@@ -55,7 +55,9 @@ let rec gameturn gstate ~rules ~visualizer =
         Rules.update_player_mana
           (`From_actions actions) 
           ~gstate:{ gstate with board }
-        |> Rules.determine_possible_winner
+        |> Rules.determine_possible_winner in
+
+      let _ = Visualize.board gstate
 
       in { gstate with turn = (Player.opposite gstate.turn) }
 
@@ -73,7 +75,7 @@ let rec gameturn gstate ~rules ~visualizer =
     end
 
 
-(* ~visualizer ~iinterp ; firstclass mod's*)
+(* ~iinterp ; fcmod*)
 let gloop gstate_init ~rules ~visualizer = 
   let open Player in
   let rec loop_if_no_winner = function
