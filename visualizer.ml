@@ -33,21 +33,58 @@ module Basic : S = struct
     | X -> "x" | Y -> "y" | Z -> "z"
 
   let sep, fill = "|", "_" 
+  let mana_fill = "."
+  let mana_bar = "|"
 
   let str_of_elem = function 
     | Lambda (s0, s1) -> [ str_of_sym s0; "."; str_of_sym s1 ]
     | Symbol s -> [ fill; str_of_sym s; fill ]
     | Empty -> List.make 3 fill
 
+  let str_of_pname ~gstate lim pid = 
+    let name = Gstate.player_name ~gstate pid in
+    if String.length name > lim then
+      String.sub name 0 lim 
+    else name
+    
+  let str_of_pmana ~gstate len_full pid = 
+    let mana = Gstate.player_mana ~gstate pid in
+    let nbars = Int.of_float (mana *. (Float.of_int len_full)) in
+    let pdirect = Gstate.player_position ~gstate pid 
+    in
+    "[" :: ( match pdirect with
+        | Left -> 
+          List.fold_righti (fun i s acc ->
+              if nbars > i then 
+                mana_bar :: acc
+              else 
+                s :: acc
+            ) (List.make len_full mana_fill) ["]"]
+        | Right -> 
+          List.fold_lefti (fun acc i s ->
+              if nbars > i then 
+                mana_bar :: acc
+              else 
+                s :: acc
+            ) ["]"] (List.make len_full mana_fill) )
+    |> String.concat ""
+
   let board gstate = 
+    let len_mana, len_name = 9, 5 in
     let elems = List.of_enum (Board.enum gstate.board) in
-    let board = String.concat ""
+    let board_str = String.concat ""
         (List.concat 
            ((List.fold_right (fun elem acc -> 
                 [sep] :: (str_of_elem elem.element) :: acc )
              ) elems [[sep]] )) in
-    let full = ((*"\r" ^*) board)
-    in print_endline full
+    let full = String.concat ""
+        [ str_of_pmana ~gstate len_mana P0;
+          str_of_pname ~gstate len_name P0;
+          board_str;
+          str_of_pname ~gstate len_name P1;
+          str_of_pmana ~gstate len_mana P1 ]
+    in 
+    print_endline full
 
 end
 
