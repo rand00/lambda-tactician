@@ -20,9 +20,10 @@ open Core_rand00
 open Gametypes
 open Gstate
 
-let rec gameturn gstate rules = 
+let rec gameturn gstate ~rules ~visualizer = 
 
   let module Rules = (val rules : Rules.S) in
+  let module Visual = (val visualizer : Visualizer.S) in
 
   Gstate.next_player_element ~gstate 
   |> Rules.apply_cost_to_element ~gstate
@@ -67,13 +68,13 @@ let rec gameturn gstate rules =
       |> Rules.determine_possible_winner
       |> function
       | { winner = Some _ } as gstate -> gstate
-      | _ -> gameturn gstate rules (*..same players turn*)
+      | _ -> gameturn gstate ~rules ~visualizer (*..same players turn*)
 
     end
 
 
 (* ~visualizer ~iinterp ; firstclass mod's*)
-let gloop gstate_init rules = 
+let gloop gstate_init ~rules ~visualizer = 
   let open Player in
   let rec loop_if_no_winner = function
     | { winner = Some player; p0; p1 } -> 
@@ -81,7 +82,7 @@ let gloop gstate_init rules =
        | P0 -> print_endline ("And the winner is "^p0.name^"!")
        | P1 -> print_endline ("And the winner is "^p1.name^"!")
        | PNone -> failwith "Control: Ehm.. something wen't wrong.")
-    | gstate -> loop_if_no_winner (gameturn gstate rules)
+    | gstate -> loop_if_no_winner (gameturn gstate ~rules ~visualizer)
   in 
   loop_if_no_winner gstate_init
 
