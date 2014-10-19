@@ -19,6 +19,7 @@ open Batteries
 open Core_rand00
 open Gametypes
 
+let _ = Random.self_init ()
 
 let random_symbol () = 
   Random.int 3 |> function
