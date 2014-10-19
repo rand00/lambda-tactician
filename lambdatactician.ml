@@ -18,41 +18,34 @@
 open Batteries
 open Core_rand00 
 open Gametypes
+open Gstate
+open Player
 
 let start () =
   
   let gstate = {
     winner = None;
+    turn = P0;
     board = Board.make 16;
+    rvalues = Rules.std_values;
 
-    element_costs = {
-      lambda = 0.3;
-      symbol = 0.3;
-      empty = 0.0;
-    };
+    p0 = { id = P0; name = "Hansi";
+           location = Local;
+           position = Left;
+           next_move = Ai.Random.next_move;
+           mana = 1.;
+         };
 
-    rules = (module Rules.Basic : Rules.S);
-
-    p0 = {
-      id = P0; name = "Hansi";
-      location = Local;
-      position = `Left;
-      next_move = Ai.Random.next_move;
-      mana = 1.;
-    };
-
-    p1 = {
-      id = P1; name = "Finka";
-      location = Local;
-      position = `Right;
-      next_move = Ai.Random.next_move;
-      mana = 1.;
-    };
+    p1 = { id = P1; name = "Finka";
+           location = Local;
+           position = Right;
+           next_move = Ai.Random.next_move;
+           mana = 1.; };
   } 
   
   in Control.gloop gstate
-  (*  set  ~visualizer:Visualizer.termprinter0 *)
-
+    ~rules:(module Rules.Basic)
+    ~visualizer:(module Visualizer.Basic)
 
 let _ = start ()
 
