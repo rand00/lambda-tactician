@@ -56,9 +56,8 @@ let eval_action board action =
 
 let move_all p_id direction board = 
   let len = Array.length board in
-  let board' = make len in
-  let conseqs = Array.fold_left (fun conseqs elem ->
-      match elem with 
+  Array.fold_left (fun (conseqs, board') elem -> 
+      match elem with
       | {owner} when owner = p_id-> ( match direction with
 
           | Left -> 
@@ -67,10 +66,15 @@ let move_all p_id direction board =
             let elem' = { elem with position = Some pos_to} in
 
             if pos_to < 0 then 
-              (Out_of_bounds (Left, elem')) :: conseqs
+              ((Out_of_bounds (Left, elem')) :: conseqs,
+               board')
             else 
-              ( board'.(pos_to) <- elem';
-                (Jumpover (elem', board.(pos_over))) :: conseqs )
+              ( if board'.(pos_to).element <> Empty then
+                  failwith "Board:move_all: overwriting an non-empty element."
+                else
+                  ( board'.(pos_to) <- elem';
+                    ((Jumpover (elem', board.(pos_over))) :: conseqs,
+                     board')))
 
           | Right -> 
             let pos_to = (Option.get elem.position)+2 in
@@ -78,17 +82,27 @@ let move_all p_id direction board =
             let elem' = {elem with position = Some pos_to} in
 
             if pos_to >= len then
-              (Out_of_bounds (Right, elem')) :: conseqs
+              ((Out_of_bounds (Right, elem')) :: conseqs,
+               board')
             else
-              ( board'.(pos_to) <- elem';
-                (Jumpover (elem', board.(pos_over))) :: conseqs ))
+              ( if board'.(pos_to).element <> Empty then
+                  failwith "Board:move_all: overwriting an non-empty element."
+                else
+                  ( board'.(pos_to) <- elem';
+                    ((Jumpover (elem', board.(pos_over))) :: conseqs ,
+                     board'))))
 
-      | elem -> 
+      | {element} as elem when element <> Empty -> 
         let pos = Option.get elem.position in
-        ( board'.(pos) <- elem;
-          conseqs )
-    ) [] board 
-  in conseqs, board'
+        if board'.(pos).element <> Empty then
+          failwith "Board:move_all: overwriting an non-empty element."
+        else
+          ( board'.(pos) <- elem;
+            conseqs, board' )
+
+      | _ -> conseqs, board'
+
+    ) ([], make len) board 
 
 let move_all_and_add board elem ~elems_owned_by ~direction = 
   let conseqs, board' = move_all elems_owned_by direction board in
