@@ -30,6 +30,6 @@ val move_all_and_add : t -> Gametypes.element_wrap ->
   direction:Gametypes.direction -> 
   Gametypes.board_move_conseq list * t
 
-val remove_killed : t -> t
+val remove_killed_elems : t -> t
 
 

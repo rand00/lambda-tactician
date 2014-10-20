@@ -52,14 +52,17 @@ let rec gameturn gstate ~rules ~visualizer =
           actions in
 
       let gstate = 
-        Rules.update_player_mana
+        Rules.update_player_mana ~gstate
           (`From_actions actions) 
-          ~gstate:{ gstate with board }
-        |> Rules.determine_possible_winner in
+        |> Rules.set_possible_winner in
 
-      let _ = Visualize.board gstate
+      let _ = Visualize.board gstate in
 
-      in { gstate with turn = (Player.opposite gstate.turn) }
+      let board = Board.remove_killed_elems board
+
+      in { gstate with 
+           turn = (Player.opposite gstate.turn);
+           board }
 
     end
 
@@ -67,7 +70,7 @@ let rec gameturn gstate ~rules ~visualizer =
     begin
 
       Rules.apply_punishment illegal_elem ~gstate
-      |> Rules.determine_possible_winner
+      |> Rules.set_possible_winner
       |> function
       | { winner = Some _ } as gstate -> gstate
       | _ -> gameturn gstate ~rules ~visualizer (*..same players turn*)
