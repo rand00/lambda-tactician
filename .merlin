@@ -1,0 +1,15 @@
+S .
+S tests
+S core_rand
+
+B _build
+B _build/tests
+B _build/core_rand
+
+PKG text
+PKG batteries 
+PKG lwt lwt.unix lwt.syntax
+PKG osc osc.lwt
+PKG lambda-term
+
+EXT lwt
