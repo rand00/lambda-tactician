@@ -42,7 +42,7 @@ let start () =
            next_move = Ai.Random.next_move;
            mana = 1.; };
   } 
-  
+   
   in Control.gloop gstate
     ~rules:(module Rules.Basic)
     ~visualizer:(module Visualizer.Basic)

@@ -32,7 +32,7 @@ let rec gameturn gstate ~rules ~visualizer =
   | `Legal element -> 
 
     begin 
-
+ 
       let gstate = Rules.update_player_mana 
           (`From_element element) 
           ~gstate in
@@ -67,6 +67,7 @@ let rec gameturn gstate ~rules ~visualizer =
     end
 
   | `Illegal illegal_elem ->
+
     begin
 
       Rules.apply_punishment illegal_elem ~gstate

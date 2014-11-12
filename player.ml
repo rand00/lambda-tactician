@@ -30,7 +30,7 @@ type t = {
   name : string;
   location : location;
   position : Gametypes.direction;
-  next_move : (Board.t -> mana -> Gametypes.element);
+  next_move : (Board.t -> mana -> Gametypes.element Lwt.t);
   mana : mana;
 }
 

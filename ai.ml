@@ -29,6 +29,8 @@ let random_symbol () =
 
 module Random = struct 
 
+  open Lwt
+  
   let random_element (pct_lambda, pct_symbol) = 
     let rand = Random.float 1. in
     if rand < pct_lambda then
@@ -37,9 +39,10 @@ module Random = struct
       Symbol (random_symbol ())
     else Empty
 
-  (*goto: use lwt here?*)
   let next_move _ _ = 
-    let pct_lambda, pct_symbol = (0.1, 0.5)
-    in random_element (pct_lambda, pct_symbol)
+    let pct_lambda, pct_symbol = (0.1, 0.5) in
+    Lwt_unix.sleep ((Random.float 1.5) +. 0.1)
+    >> return (random_element (pct_lambda, pct_symbol))
 
+  
 end
