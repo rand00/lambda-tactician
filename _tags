@@ -1,3 +1,5 @@
 true: thread
 true: syntax(camlp4o)
 true: package(text,text.pcre,text.pcre-syntax,batteries)
+true: package(lwt,lwt.syntax,lwt.unix,lwt.extra)
+#true: cflags(-bin-annot)
