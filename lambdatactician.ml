@@ -45,7 +45,7 @@ let start () =
    
   in Control.gloop gstate
     ~rules:(module Rules.Basic)
-    ~visualizer:(module Visualizer.Basic)
+    ~visualizer:(module Visualizer.Basic_oneline)
 
 let _ = start ()
 

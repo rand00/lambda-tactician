@@ -21,10 +21,10 @@ open Core_rand00
 open Gametypes
 
 module type S = sig 
-  val board : Gstate.t -> unit
+  val run : Gstate.t -> unit
 end
 
-module Basic : S = struct 
+module Basic = struct 
 
   open Gstate
   open Player
@@ -66,13 +66,17 @@ module Basic : S = struct
             ) ["]"] (List.make len_full mana_fill) )
     |> String.concat ""
 
-  let board gstate = 
+  let board gstate print = 
     let len_mana, len_name = 9, 5 in
     let elems = List.of_enum (Board.enum gstate.board) in
     let board_str = String.concat ""
         (List.concat 
            ((List.fold_right (fun elem acc -> 
-                [sep] :: (strlst_of_elem elem.element) :: acc )
+                [sep] :: (match elem.killed with
+                    | true  -> ( match elem.element with
+                        | Lambda _ -> ["###"]
+                        | _ -> ["_#_"] )
+                    | false -> strlst_of_elem elem.element) :: acc )
              ) elems [[sep]] )) in
     let full = String.concat ""
         [ str_of_pmana ~gstate len_mana P0;
@@ -81,7 +85,18 @@ module Basic : S = struct
           str_of_pname ~gstate len_name P1;
           str_of_pmana ~gstate len_mana P1 ]
     in 
-    print_endline full
+    print full
+
+  let run gstate = board gstate print_endline
 
 end
 
+module Basic_oneline = struct
+  include Basic
+  
+  let run gstate = board gstate (fun s ->
+      Sys.command "tput cuu1" |> ignore;
+      print_endline s
+    )
+
+end
