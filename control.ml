@@ -56,7 +56,7 @@ let rec gameturn gstate ~rules ~visualizer =
           (`From_actions actions) 
         |> Rules.set_possible_winner in
 
-      let _ = Visualize.board gstate in
+      let _ = Visualize.run { gstate with board } in
 
       let board = Board.remove_killed_elems board
 
