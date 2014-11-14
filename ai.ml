@@ -15,6 +15,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
+
 open Batteries 
 open Core_rand00
 open Gametypes
@@ -27,7 +28,7 @@ let random_symbol () =
   | 1 -> Y
   | _ -> Z
 
-module Random = struct 
+module RandomAI = struct 
 
   open Lwt
   
@@ -39,10 +40,32 @@ module Random = struct
       Symbol (random_symbol ())
     else Empty
 
-  let next_move _ _ = 
+  let next_move _ _ _ = 
     let pct_lambda, pct_symbol = (0.1, 0.5) in
     Lwt_unix.sleep ((Random.float 1.5) +. 0.1)
     >> return (random_element (pct_lambda, pct_symbol))
 
   
+end
+
+module NoSuicideAI = struct
+
+  include RandomAI
+  open Lwt
+  open Lwt_mvar
+
+  let next_move (_:Board.t) mana return_cost =
+    let pct_lambda, pct_symbol = (0.1, 0.5) in
+    let res_mvar = create_empty () in
+    lwt () = join [
+        Lwt_unix.sleep ((Random.float 1.5) +. 0.1);
+
+        let e = random_element (pct_lambda, pct_symbol) in
+        if return_cost e > mana then
+          put res_mvar Empty
+        else
+          put res_mvar e
+      ]
+    in take res_mvar
+
 end
