@@ -15,6 +15,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
+
 open Batteries
 open Core_rand00
 open Gametypes
@@ -30,7 +31,8 @@ type t = {
   name : string;
   location : location;
   position : Gametypes.direction;
-  next_move : (Board.t -> mana -> Gametypes.element Lwt.t);
+  next_move : (Board.t -> mana -> (element -> float)
+               -> Gametypes.element Lwt.t);
   mana : mana;
 }
 

@@ -54,14 +54,15 @@ let opposite_direction = function
   | Left -> Right
   | Right -> Left
 
-let next_player_element ~gstate =
+let next_player_element ~gstate return_cost =
   let open Lwt in
   match gstate.turn with 
   | P0 -> 
     let next_elem = Lwt_main.run
-        (gstate.p0.next_move 
+        (gstate.p0.next_move
            gstate.board 
-           gstate.p0.mana)
+           gstate.p0.mana
+           return_cost)
     in { owner = P0;
          element = next_elem;
          mana_cost = 0.;
@@ -69,9 +70,10 @@ let next_player_element ~gstate =
          position = None; }
   | P1 -> 
     let next_elem = Lwt_main.run
-        (gstate.p1.next_move 
+        (gstate.p1.next_move
            gstate.board 
-           gstate.p1.mana)
+           gstate.p1.mana
+           return_cost)
     in { owner = P1;
          element = next_elem;
          mana_cost = 0.;

@@ -25,7 +25,7 @@ let rec gameturn gstate ~rules ~visualizer =
   let module Rules = (val rules : Rules.S) in
   let module Visualize = (val visualizer : Visualizer.S) in
 
-  Gstate.next_player_element ~gstate 
+  Gstate.next_player_element ~gstate (Rules.return_cost ~gstate)
   |> Rules.apply_cost_to_element ~gstate
   |> Rules.is_element_legal ~gstate
   |> function

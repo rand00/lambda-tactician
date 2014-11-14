@@ -32,14 +32,14 @@ let start () =
     p0 = { id = P0; name = "Hansi";
            location = Local;
            position = Left;
-           next_move = Ai.Random.next_move;
+           next_move = Ai.NoSuicideAI.next_move;
            mana = 1.;
          };
 
     p1 = { id = P1; name = "Finka";
            location = Local;
            position = Right;
-           next_move = Ai.Random.next_move;
+           next_move = Ai.NoSuicideAI.next_move;
            mana = 1.; };
   } 
    
