@@ -58,7 +58,7 @@ module NoSuicideAI = struct
     let pct_lambda, pct_symbol = (0.1, 0.5) in
     let res_mvar = create_empty () in
     lwt () = join [
-        Lwt_unix.sleep ((Random.float 1.5) +. 0.1);
+        Lwt_unix.sleep 1.; (*((Random.float 1.5) +. 0.1);*)
 
         let e = random_element (pct_lambda, pct_symbol) in
         if return_cost e > mana then
