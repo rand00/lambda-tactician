@@ -2,5 +2,5 @@
 
 #important to use -Is instead of -I
 ocamlbuild -use-ocamlfind -cflag -bin-annot \
-    -Is core_rand \
+    -Is src,core_rand \
     lambdatactician.native

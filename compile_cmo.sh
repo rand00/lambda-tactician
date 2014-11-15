@@ -1,7 +1,7 @@
 #! /bin/bash
 
 ocamlbuild -use-ocamlfind -no-links \
-    -Is core_rand \
+    -Is core_rand,src \
     gametypes.cmo \
     visualizer.cmo \
     board.cmo \
