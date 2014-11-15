@@ -1,0 +1,30 @@
+/usr/bin/scsynth -i 2 -o 2 -u 57110
+jackd 0.124.1
+Copyright 2001-2009 Paul Davis, Stephane Letz, Jack O'Quinn, Torben Hohn and others.
+jackd comes with ABSOLUTELY NO WARRANTY
+This is free software, and you are welcome to redistribute it
+under certain conditions; see the file COPYING for details
+
+JACK compiled with System V SHM support.
+loading driver ..
+creating alsa driver ... hw:0|hw:0|1024|2|48000|0|0|nomon|swmeter|-|32bit
+configuring for 48000Hz, period = 1024 frames (21.3 ms), buffer = 2 periods
+ALSA: final selected sample format for capture: 32bit integer little-endian
+ALSA: use 2 periods for capture
+ALSA: final selected sample format for playback: 32bit integer little-endian
+ALSA: use 2 periods for playback
+JackDriver: client name is 'SuperCollider'
+SC_AudioDriver: sample rate = 48000.000000, driver's block size = 1024
+JackDriver: connected  alsa_pcm:capture_1 to SuperCollider:in_1
+JackDriver: connected  alsa_pcm:capture_2 to SuperCollider:in_2
+JackDriver: max output latency 21.3 ms
+JackDriver: connected  SuperCollider:out_1 to alsa_pcm:playback_1
+JackDriver: connected  SuperCollider:out_2 to alsa_pcm:playback_2
+SuperCollider 3 server ready.
+Zeroconf: registered service 'SuperCollider'
+*** ERROR: SynthDef sinew not found
+FAILURE IN SERVER /s_new SynthDef not found
+FAILURE IN SERVER /n_set Node 1001 not found
+FAILURE IN SERVER /n_free Node 1001 not found
+JackDriver: max output latency 0.0 ms
+jack main caught signal 12

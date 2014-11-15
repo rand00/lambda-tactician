@@ -5,13 +5,18 @@ open Lwt
 open Osc_lwt.Udp
 
 
-let test () = 
+let start_SCsynth () =
+  Lwt_io.printl "Starting scsynth server - see server-log in ./log/scsynth.log"
+  >> Lwt_unix.system "./run_scsynth.sh 2>&1 > ./log/scsynth.log"
+  >>= (fun _ -> Lwt_io.printl "Scsynth exited.")
+
+let test_client () = 
   let localhost = Unix.inet_addr_of_string "127.0.0.1" 
   and port = 57110 in
   let addr = Lwt_unix.ADDR_INET (localhost, port) in
   let n_id = 1001l
   in
-  let start_synth = Osc.(Message {
+  let start_synthdef = Osc.(Message {
       address = "/s_new"; (*use of '/' instead of '\' from sc-lang definitions*)
       arguments = [
         String "sinew"; (*synthdef name*)
@@ -30,16 +35,21 @@ let test () =
         Int32 431l;
       ]
     })
-  and stop_synth = Osc.(Message {
+  and stop_synthdef = Osc.(Message {
       address = "/n_free";
       arguments = [ Int32 n_id ]
+    })
+
+  and stop_server = Osc.(Message {
+      address = "/quit";
+      arguments = []
     })
   in 
   Client.create ()
   >>= fun client ->
 
   Lwt_io.printl "Starting synth"
-  >> Client.send client addr start_synth
+  >> Client.send client addr start_synthdef
   >> Lwt_unix.sleep 1.
 
   >> Lwt_io.printl "Changing frequency"
@@ -47,12 +57,20 @@ let test () =
   >> Lwt_unix.sleep 1.
 
   >> Lwt_io.printl "Stopping synth"
-  >> Client.send client addr stop_synth
+  >> Client.send client addr stop_synthdef
   >> Lwt_unix.sleep 1.    
+
+  >> Lwt_io.printl "Stopping server"
+  >> Client.send client addr stop_server
   >> Client.destroy client
 
 
-let _ = Lwt_main.run (test ())
+let _ = Lwt_main.run (
+    Lwt.async start_SCsynth;
+    Lwt_unix.sleep 5.
+    >> test_client () )
+
+
 
 
 
