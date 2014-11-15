@@ -19,7 +19,7 @@ export SC_SYNTHDEF_PATH="./supercollider/synthdefs"
 SCCMD="$SCSYNTH -i ${SC_JACK_INPUTS} -o ${SC_JACK_OUTPUTS} -u $PORT $@"
 echo $SCCMD
 
-$SCCMD
+$SCCMD 2>&1
 
 #nice -n -10 $SCCMD || $SCCMD
 
