@@ -8,9 +8,12 @@ module Server = struct
   open Osc_lwt.Udp
 
   let run () =
-    Lwt_io.printl "Starting scsynth server - see server-log in ./log/scsynth.log"
-    >> Lwt_unix.system "./run_scsynth.sh 2>&1 > ./log/scsynth.log"
-    >>= (fun _ -> Lwt_io.printl "Scsynth exited.")
+    Lwt_main.run
+      (Lwt.async 
+         (fun () ->
+            Lwt_unix.system
+              "./run_scsynth.sh 2>&1 > ./log/scsynth.log");
+       return ())
 
 end
 
@@ -21,7 +24,7 @@ module Client = struct
     let localhost = Unix.inet_addr_of_string "127.0.0.1" 
     and port = 57110 in
     let addr = Lwt_unix.ADDR_INET (localhost, port)
-    in Client.create(), addr
+    in (Lwt_main.run (Client.create())), addr
 
 end
 
@@ -29,9 +32,11 @@ end
 open Osc_lwt.Udp (*Client and Server modules rebound *)
 
 let quit_all (client, addr) =
-  Client.send client addr Osc.(Message {
-      address = "/quit"; arguments = [] })
-  >> Client.destroy client
+  Lwt_main.run (
+    Client.send client addr Osc.(Message {
+        address = "/quit"; arguments = [] })
+    >> Client.destroy client
+  )
 
 (** Internal functions - hide by mli*)
 
@@ -43,39 +48,56 @@ let next_node_id () =
   in i
 
 
-(** Make functor for convenience*)
-module Make
-    (C : sig
-       val client :
-         (Osc_lwt.Udp.Client.t, Lwt_unix.sockaddr)
-     end) = struct
+module type CSig = sig
+  val client : Osc_lwt.Udp.Client.t * Lwt_unix.sockaddr
+end
 
+module type S = sig
+
+  type synth_args = [
+    | `Dur of float
+    | `Freq of float
+    | `Mul of float
+  ]
+
+  val make_synth : string -> synth_args list -> unit
+
+  val sinew0 : synth_args list -> unit
+
+end
+
+(** Make functor for convenience*)
+module Make (C : CSig) = struct
+
+  open Osc
+  
   let client, addr = C.client
   
   (** Types of synths args*)
 
-  type synth_args =
-    | Dur of float
-    | Freq of float
-    | Mul of float
+  type synth_args = [
+      `Dur of float
+    | `Freq of float
+    | `Mul of float
+  ]
 
   let map_arg = function
-    | Dur f  -> [ "dur"; Float f ]
-    | Freq f -> [ "freq"; Int32 (Int32.of_float f) ]
-    | Mul f -> [ "mul"; Float f ]
+    | `Dur f  -> [ String "dur"; Float32 f ]
+    | `Freq f -> [ String "freq"; Int32 (Int32.of_float f) ]
+    | `Mul f -> [ String "mul"; Float32 f ]
 
   let map_args args =
     List.concat (List.map map_arg args)
 
   let get_dur = function
-    | Dur f -> f | _ -> assert false
+    | `Dur f -> f | _ -> assert false
 
   let wait_duration ?(dur = 0.5) args =
     Lwt_unix.sleep
       (try
-         (List.find (function | Dur _ -> true | _ -> false) args)
+         (List.find (function | `Dur _ -> true | _ -> false) args)
          |> get_dur
-       with NotFound -> dur)
+       with Not_found -> dur)
 
   let make_osc_msgs synth args =
     let node_id = next_node_id () in
@@ -95,10 +117,14 @@ module Make
     in start, stop
 
   let make_synth synth args =
-    let start, stop = make_osc_msgs synth args
-    in Client.send client addr start
-    >> wait_duration args
-    >> Client.send client addr stop
+    Lwt_main.run
+      (Lwt.async 
+         (fun () ->
+            let start, stop = make_osc_msgs synth args
+            in Client.send client addr start
+            >> wait_duration args
+            >> Client.send client addr stop);
+       return ())
 
 
   (** Simple synth functions - for fx action/conseq sounds*)
