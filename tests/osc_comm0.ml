@@ -17,7 +17,9 @@ let test_client () =
   let n_id = 1001l
   in
   let start_synthdef = Osc.(Message {
-      address = "/s_new"; (*use of '/' instead of '\' from sc-lang definitions*)
+      (*use of '/' instead of '\' from sc-lang definitions
+        see http://doc.sccode.org/Guides/OSC_commands.html *)
+      address = "/s_new"; 
       arguments = [
         String "sinew"; (*synthdef name*)
         Int32 n_id; (*node id*)
@@ -47,6 +49,10 @@ let test_client () =
   in 
   Client.create ()
   >>= fun client ->
+
+  (*when calling some synth from sclang (and running server from script), 
+    there is a need to free the resources (with C-s in emacs) before the 
+    server takes requests correctly - this might be neccesary here too.*)
 
   Lwt_io.printl "Starting synth"
   >> Client.send client addr start_synthdef
