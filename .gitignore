@@ -16,4 +16,4 @@ _build
 /lib_lambdaterm
 /lib_osc_tests
 /sclang_dtu
-/log
+log
