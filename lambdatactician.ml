@@ -21,7 +21,7 @@ open Gametypes
 open Gstate
 open Player
 
-let start () =
+let run_game () =
   
   let gstate = {
     winner = None;
@@ -41,13 +41,25 @@ let start () =
            position = Right;
            next_move = Ai.NoSuicideAI.next_move;
            mana = 1.; };
-  } 
-   
-  in Control.gloop gstate
+  } in
+
+  let _ = Synth.Server.run () in
+
+  let module C : Synth.CSig = struct
+    let client = Synth.Client.make () end in
+
+  let _ = at_exit (fun () -> Synth.quit_all C.client) in
+
+  (*goto: make load-screen while waiting for server with lwt_unix.sleep*)
+  let _ = Unix.sleep 4 in
+  
+  Control.gloop gstate
     ~rules:(module Rules.Basic)
     ~visualizer:(module Visualizer.Basic_oneline)
+    ~synth:(module Synth.Make (C) : Synth.S)
 
-let _ = start ()
+
+let _ = run_game ()
 
 
     
