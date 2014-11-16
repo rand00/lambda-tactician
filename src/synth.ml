@@ -9,10 +9,11 @@ module Server = struct
 
   let run () =
     Lwt_main.run
-      (Lwt.async 
-         (fun () ->
-            Lwt_unix.system
-              "./run_scsynth.sh 2>&1 > ./log/scsynth.log");
+      (Lwt.async (fun () ->
+           (if not (Sys.file_exists "log") then
+              Lwt_unix.mkdir "log" 0o755
+            else return ())
+           >> Lwt_unix.system "./run_scsynth.sh 2>&1 > ./log/scsynth.log");
        return ())
 
 end
