@@ -85,6 +85,9 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 (* ~iinterp ; fcmod*)
 let gloop gstate_init ~rules ~visualizer ~synth = 
   let open Player in
+  let module Synth = (val synth : Synth.S) in
+  let _ = Synth.ghostwind []
+  in
   let rec loop_if_no_winner = function
     | { winner = Some player; p0; p1 } -> 
       (match player with 
