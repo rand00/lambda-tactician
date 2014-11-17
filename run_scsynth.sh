@@ -12,7 +12,8 @@ export SC_JACK_INPUTS=2
 export SC_JACK_OUTPUTS=2
 export SC_JACK_DEFAULT_INPUTS="alsa_pcm:capture_1,alsa_pcm:capture_2"
 export SC_JACK_DEFAULT_OUTPUTS="alsa_pcm:playback_1,alsa_pcm:playback_2"
-export SC_SYNTHDEF_PATH="./supercollider/synthdefs"
+export SC_SYNTHDEF_PATH="./supercollider/synthdefs" 
+#< this get's loaded, but is not set as standard when writing synths
 
 # like this it's not necessary to run this script as root < (because of being in build-dir?)
 # and it shows you how the server is actually started
