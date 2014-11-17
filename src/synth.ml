@@ -61,9 +61,11 @@ module type S = sig
     | `Mul of float
   ]
 
-  val make_synth : string -> synth_args list -> unit
+  val make_synth : ?autofree:bool -> string -> synth_args list -> unit
 
   val sinew0 : synth_args list -> unit
+
+  val ghostwind : synth_args list -> unit
 
 end
 
@@ -100,6 +102,8 @@ module Make (C : CSig) = struct
          |> get_dur
        with Not_found -> dur)
 
+  (*goto : rename this and pass synth_node_id separately 
+    so other osc_msg_handlers can be used with this *)
   let make_osc_msgs synth args =
     let node_id = next_node_id () in
     let start = Osc.(Message {
@@ -117,21 +121,29 @@ module Make (C : CSig) = struct
       })
     in start, stop
 
-  let make_synth synth args =
+  (*goto: rename this to 'simple_synth'? or just make 'make_synth_handler' next *)
+  let make_synth ?(autofree=false) synth args =
     Lwt_main.run
       (Lwt.async 
          (fun () ->
             let start, stop = make_osc_msgs synth args
             in Client.send client addr start
-            >> wait_duration args
-            >> Client.send client addr stop);
+            (*goto: shouldn't it be possible to set duration even if no autofree?*)
+            >> (if autofree then 
+                  wait_duration args >> Client.send client addr stop
+                else return ()));
        return ())
 
 
   (** Simple synth functions - for fx action/conseq sounds*)
 
-  let sinew0 args = make_synth "sinew" args
+  let sinew0 args = make_synth ~autofree:true "sinew" args
 
+  let ghostwind args = make_synth "atmos_ghostwind" args
+
+
+
+  
 end
 
 
