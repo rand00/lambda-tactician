@@ -42,7 +42,8 @@ else
         echo "The 'lib_osc' directory is empty or nonexistent"
         echo "You probably forgot to pass the '--recursive' argument to 'git clone'"
         echo "Will now try to fetch the Osc library from github"
-        cd lib_osc && git fetch && git merge origin/master && cd ..
+
+        git submodule update --init lib_osc
         if [[ $? -eq 0 ]]
         then
             echo "Osc lib was succesfully fetched"
@@ -64,6 +65,26 @@ else
         exit 1
     fi
 fi
+
+if [ "$(ls -A core_rand 2>/dev/null)" ]
+then
+    echo "Core_rand files are present in 'core_rand'"
+    echo ">> Continuing compilation"
+else
+    echo "The 'core_rand' directory is empty or nonexistent"
+    echo "You probably forgot to pass the '--recursive' argument to 'git clone'"
+    echo "Will now try to fetch the Core_rand library from github"
+
+    git submodule update --init core_rand
+    if [[ $? -eq 0 ]]
+    then
+        echo "Core_rand lib was succesfully fetched"
+    else
+        echo "Something wen't wrong in with the download of Core_rand"
+        exit 1
+    fi
+fi
+
 
 echo "Compiling Lambdatactician"
 ./compile_lambtac_native.sh
