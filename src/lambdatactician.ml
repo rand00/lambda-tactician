@@ -15,6 +15,7 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
+
 open Batteries
 open Core_rand00 
 open Gametypes
@@ -44,6 +45,7 @@ let run_game () =
   } in
 
   let _ = Synth.Server.run () in
+  let _ = print_endline "" in
 
   let module C : Synth.CSig = struct
     let client = Synth.Client.make () end in
