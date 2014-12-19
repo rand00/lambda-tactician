@@ -58,6 +58,7 @@ SynthDef( \atmos_ghostwind, {
 	))
 }).writeDefFile;
 )
+
 //< Weird ghostly v2 : synthdef 
 
 
@@ -105,10 +106,74 @@ SynthDef( \atmos_ghostwind, {
 //< More like Ocean
 
 
+SynthDef( 
+	\ratata, 
+	{| panfrom = -1, mul = 0.3 |
+		var sig,dur,panline,freq;
+		dur = 1.7;
+		freq = Rand(60, 90);
+		panline = Line.kr(panfrom, panfrom * -1, dur);
+		FreeSelfWhenDone.kr( panline );
+		sig = Pan2.ar(
+			Decay2.ar(
+				Impulse.ar(8, 0,LFSaw.kr(0.3, 0, -0.3, 0.3)),
+				0.001, 
+				0.3, 
+				Mix.ar(Pulse.ar([freq,freq+1], 0.3))),
+			panline) * mul;
+		Out.ar( [0,1], sig);
+	}
+).writeDefFile;//add;
+//< for moving piece ; pass panfrom -1/1 
 
+x = Synth(\ratata, [panfrom:-1]);
 
+{ z = Mix.ar(Pulse.ar([80,81], 0.3)); [z, z] * 0.2 }.play
 
+// scifi transport passing by >
+{ 
+	var freq,sig,amp,dur,free,pan_dur, pan_start, a, cycle, slide, bfreq;
+	amp = 0.3;
+	dur = 2.6;
+	//base tones
+	bfreq = Rand(470,180);
+	slide = Rand(-12,12);
+	freq = [bfreq + slide, bfreq] + (SinOsc.kr(10) * 10);
+	sig = LPF.ar( LFSaw.ar(freq, 0, SinOsc.kr(0.2)), 1000);
+	//reverb
+	sig = FreeVerb.ar(
+		sig, 0.7, 0.7, 0.4);
+	a = [-1, 1];
+	//envelope
+	//sig = Decay2.ar( sig, 0.1, 0.3);
+	//panning
+	pan_start = Rand(-1,1); 
+	pan_dur = Line.kr(pan_start, pan_start * -1, dur);
+	FreeSelfWhenDone.kr( pan_dur );
+	sig = Pan2.ar( sig, pan_dur );
+	sig = sig * amp;
+	Out.ar([0,1], sig);
+}.play;
 
+// >> synthlyghost - bg tone
+SynthDef( 
+	\synth_ghost2, 
+	{| mul=0.02 |
+		Out.ar(
+			[0, 1],
+			{ Decay2.ar(
+				SinOsc.ar( [Rand(2.1,0.015), Rand(3,0.029)],
+					0,0.1),
+				0.01,
+				0.03,
+				SinOsc.ar(
+					[SinOsc.kr(0.002,0.45,20)+250, SinOsc.kr(0.001,0,20)+300],
+					[0.5,0],
+					0.12)
+			) } * mul
+		)
+	}
+).add;//writeDefFile;//add; 
 
-
+x = Synth(\synth_ghost2);
 
