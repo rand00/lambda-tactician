@@ -26,7 +26,9 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
   let module Visualize = (val visualizer : Visualizer.S) in
   let module Synth = (val synth : Synth.S) in
   
-  let _ = Synth.sinew0 [] in
+  let _ = Synth.ratata [ (match gstate.turn with 
+      | P0 -> `PanR | P1 -> `PanL ) ] in
+  let _ = Visualize.run gstate in
   
   Gstate.next_player_element ~gstate (Rules.return_cost ~gstate)
   |> Rules.apply_cost_to_element ~gstate
@@ -86,7 +88,7 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 let gloop gstate_init ~rules ~visualizer ~synth = 
   let open Player in
   let module Synth = (val synth : Synth.S) in
-  let _ = Synth.ghostwind []
+  let _ = Synth.synth_ghost2 []
   in
   let rec loop_if_no_winner = function
     | { winner = Some player; p0; p1 } -> 

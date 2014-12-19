@@ -1,3 +1,20 @@
+(*
+  LambdaTactician - a cmd-line tactical lambda game.
+  Copyright (C) 2014 Claes Worm 
+
+  This program is free software: you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation, either version 3 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*)
 
 open Batteries 
 open Core_rand00
@@ -59,6 +76,8 @@ module type S = sig
     | `Dur of float
     | `Freq of float
     | `Mul of float
+    | `PanR 
+    | `PanL
   ]
 
   val make_synth : ?autofree:bool -> string -> synth_args list -> unit
@@ -66,6 +85,10 @@ module type S = sig
   val sinew0 : synth_args list -> unit
 
   val ghostwind : synth_args list -> unit
+
+  val ratata : synth_args list -> unit
+
+  val synth_ghost2 : synth_args list -> unit
 
 end
 
@@ -82,12 +105,15 @@ module Make (C : CSig) = struct
       `Dur of float
     | `Freq of float
     | `Mul of float
+    | `PanR | `PanL
   ]
 
   let map_arg = function
     | `Dur f  -> [ String "dur"; Float32 f ]
     | `Freq f -> [ String "freq"; Int32 (Int32.of_float f) ]
     | `Mul f -> [ String "mul"; Float32 f ]
+    | `PanR -> [ String "panfrom"; Int32 (-1l) ]
+    | `PanL -> [ String "panfrom"; Int32 1l ]
 
   let map_args args =
     List.concat (List.map map_arg args)
@@ -138,10 +164,9 @@ module Make (C : CSig) = struct
   (** Simple synth functions - for fx action/conseq sounds*)
 
   let sinew0 args = make_synth ~autofree:true "sinew" args
-
   let ghostwind args = make_synth "atmos_ghostwind" args
-
-
+  let synth_ghost2 args = make_synth "synth_ghost2" args
+  let ratata args = make_synth "ratata" args
 
   
 end
