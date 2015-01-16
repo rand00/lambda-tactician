@@ -25,6 +25,14 @@ type element =
   | Symbol of symbol
   | Empty
 
+let get_symbol = function
+  | Symbol s -> s
+  | _ -> failwith "Board.get_symbol: Can only match on Symbol"
+
+let get_lambda = function
+  | Lambda l -> l
+  | _ -> failwith "Board.get_lambda: Can only match on Lambda"
+
 let symbol_to_str = function
   | X -> "x" | Y -> "y" | Z -> "z"
 
