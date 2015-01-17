@@ -52,9 +52,16 @@ let eval_action board = function
          
   | At_home _ | At_opponent _ -> board
 
-(*goto implement*)
-let move_all_and_add board elem ~elems_owned_by ~direction =   
-  assert false
+let rec zipswitch ?(append=[]) ?(remove_last=false) = function
+  | [] -> append
+  | e::[] -> if remove_last then append else e::append
+  | e::e'::[] -> if remove_last then e'::append else e'::e::append
+  | e::e'::tl -> e'::e::(zipswitch ~append ~remove_last tl)
+
+let move_all_and_add direction elem board = 
+  match direction with 
+  | Right -> elem::(zipswitch board ~remove_last:true)
+  | Left  -> List.drop 1 (zipswitch ~append:[elem] board)
 
 (*goto implement*)
 let remove_killed_elems board = 

@@ -26,9 +26,12 @@ val eval_action : t -> Gametypes.element_action -> t
 
 (*val move_to_effect : Gametypes.board_action -> t 
   -> (Gametypes.board_move_conseq list) * t*)
-val move_all_and_add : t -> Gametypes.element_wrap -> 
-  elems_owned_by:Gametypes.player_id -> 
-  direction:Gametypes.direction -> 
+
+val move_all_and_add : 
+  Gametypes.direction -> 
+  Gametypes.element_wrap -> 
+(*  elems_owned_by:Gametypes.player_id -> *)
+  t -> 
   Gametypes.board_move_conseq list * t
 
 val remove_killed_elems : t -> t
