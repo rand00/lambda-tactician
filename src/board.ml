@@ -41,19 +41,25 @@ let eval_action board = function
 
   | Application (lambda_wrap, value_wrap) ->
     (*not checking for equal symbols, as this is a job for rules*)
-    let _, lamb_out = get_lambda lambda.element in
+    let _, lamb_out = get_lambda lambda_wrap.element in
     let pos_value, pos_lambda = 
       Tuple.Tuple2.mapn Option.get
         (value_wrap.position, lambda_wrap.position) 
     in 
     set_killed pos_value board
     |> List.modify_at pos_lambda (fun e -> 
-        { e with element = Symbol lamb_out }
-      ) board
+        { e with element = Symbol lamb_out } ) 
          
   | At_home _ | At_opponent _ -> board
-  
 
+(*goto implement*)
+let move_all_and_add board elem ~elems_owned_by ~direction =   
+  assert false
+
+(*goto implement*)
+let remove_killed_elems board = 
+  assert false
+  
 
 
 
