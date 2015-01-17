@@ -27,7 +27,7 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
   let module Synth = (val synth : Synth.S) in
   
   let _ = Synth.ratata [ (match gstate.turn with 
-      | P0 -> `PanR | P1 -> `PanL ) ] in
+      | P0 -> `PanR | P1 | PNone -> `PanL ) ] in
   let _ = Visualize.run gstate in
   
   Gstate.next_player_element ~gstate (Rules.return_cost ~gstate)

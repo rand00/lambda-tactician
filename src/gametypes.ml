@@ -30,7 +30,7 @@ let get_symbol = function
   | _ -> failwith "Board.get_symbol: Can only match on Symbol"
 
 let get_lambda = function
-  | Lambda l -> l
+  | Lambda (i,o) -> i,o
   | _ -> failwith "Board.get_lambda: Can only match on Lambda"
 
 let symbol_to_str = function
