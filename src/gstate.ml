@@ -67,7 +67,7 @@ let next_player_element ~gstate return_cost =
          element = next_elem;
          mana_cost = 0.;
          killed = false;
-         position = None; }
+         id = incr_ret_id () }
   | P1 -> 
     let next_elem = Lwt_main.run
         (gstate.p1.next_move
@@ -78,7 +78,7 @@ let next_player_element ~gstate return_cost =
          element = next_elem;
          mana_cost = 0.;
          killed = false;
-         position = None; } 
+         id = incr_ret_id () } 
   | PNone -> failwith "Gstate: PNone is no player"
 
 let add_player_mana ~gstate pid diff = 
