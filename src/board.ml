@@ -35,18 +35,14 @@ let make n =
 
 let enum = List.enum
 
+(**not in use*)
 let find_pos e board = 
   let pos,_ = List.findi (fun i e' -> 
       e.id = e'.id ) board
   in pos
 
-(*goto bug here? 
-  - fold right should be correct - check now again
-  - there is no visualization of this... hmm check - also other places where possible bug*)
 let set_killed e board = 
-(*  print_endline "\nCalling 'set_killed'\n";*)
   List.fold_right (fun e' acc -> 
-(*      Printf.printf "e.id = '%d' & e'.id = '%d'\n" e.id e'.id;*)
       if e.id = e'.id then 
         { e' with killed = true } :: acc
       else e' :: acc ) 
@@ -57,15 +53,11 @@ let set_killed e board =
 let set_killed_at pos = 
   List.modify_at pos (fun e -> { e with killed = true } ) 
 
-(*gomaybe gofix; better way of modifying elems in list than search+get pos?*)
 let eval_action board = function
   | Kill (killer_wrap, killed_wrap) -> 
-    (*print_endline "Calling 'eval_action' in 'Kill' match";*)
     set_killed killed_wrap board
 
-  (*goto > some kind of bug here with replication of symbols all over? check again*)
   | Application (lambda_wrap, value_wrap) ->
-(*    print_endline "\nCalling 'eval_action' in 'Application' match\n";*)
     (*not checking for equal symbols, as this is a job for rules*)
     let _, lamb_out = get_lambda lambda_wrap.element in
     set_killed value_wrap board
@@ -85,8 +77,6 @@ let rec zipswitch_a0 ?(append=[]) ?(remove_last=false) = function
   | e::e'::[] -> if remove_last then e'::append else e'::e::append
   | e::e'::tl -> e'::e::(zipswitch_a0 ~append ~remove_last tl)
 
-(*hmm weird version - possible to make better? 
-  - fx by writing a non-tailrec version? *)
 let zipswitch ?(append=[]) direction l = 
   let rec aux (conseq_acc, board_acc) = function
     | [] -> (conseq_acc, (List.rev append) @ board_acc)
@@ -133,7 +123,6 @@ let move_all_and_add direction elem board =
     in conseqs, board'
 
 let remove_killed_elems = 
-(*  print_endline "\nCalling 'remove_killed_elems'\n";*)
   List.map (function 
       | { killed = true; id } -> { empty_wrap with id }
       | other -> other) 
