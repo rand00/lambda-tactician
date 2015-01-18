@@ -26,10 +26,6 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
   let module Visualize = (val visualizer : Visualizer.S) in
   let module Synth = (val synth : Synth.S) in
   
-  let _ = Synth.ratata [ (match gstate.turn with 
-      | P0 -> `PanR | P1 | PNone -> `PanL ) ] in
-  let _ = Visualize.run gstate in
-  
   Gstate.next_player_element ~gstate (Rules.return_cost ~gstate)
   |> Rules.apply_cost_to_element ~gstate
   |> Rules.is_element_legal ~gstate
@@ -38,14 +34,18 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 
     begin 
  
+      let _ = Synth.ratata [ (match gstate.turn with 
+          | P0 -> `PanR | P1 | PNone -> `PanL ) ] in
+
       let gstate = Rules.update_player_mana 
           (`From_element element) 
           ~gstate in
 
       let conseqs, board = 
-        Board.move_all_and_add gstate.board element
-          ~elems_owned_by:gstate.turn
-          ~direction:(opposite_direction (current_player_position ~gstate)) in
+        Board.move_all_and_add 
+          (opposite_direction (current_player_position ~gstate))
+          element
+          gstate.board in
 
       let actions = List.filter_map 
           (Rules.conseq_to_action ~gstate)
@@ -75,11 +75,19 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 
     begin
 
+      (*goto make different synth for illegal move*)
+      let _ = Synth.ratata [ (match gstate.turn with 
+          | P0 -> `PanR | P1 | PNone -> `PanL ) ] in
+
       Rules.apply_punishment illegal_elem ~gstate
       |> Rules.set_possible_winner
       |> function
-      | { winner = Some _ } as gstate -> gstate
-      | _ -> gameturn gstate ~rules ~visualizer ~synth (*..same players turn*)
+      | { winner = Some _ } as gstate -> 
+        let _ = Visualize.run gstate 
+        in gstate
+      | gstate -> 
+        let _ = Visualize.run gstate 
+        in gameturn gstate ~rules ~visualizer ~synth (*..same players turn*)
 
     end
 
@@ -88,7 +96,9 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 let gloop gstate_init ~rules ~visualizer ~synth = 
   let open Player in
   let module Synth = (val synth : Synth.S) in
-  let _ = Synth.synth_ghost2 []
+  let module Visualize = (val visualizer : Visualizer.S) in
+  let _ = Synth.synth_ghost2 [] in
+  let _ = Visualize.run gstate_init
   in
   let rec loop_if_no_winner = function
     | { winner = Some player; p0; p1 } -> 
