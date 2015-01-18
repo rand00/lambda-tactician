@@ -46,15 +46,30 @@ type element_wrap = {
   element : element;
   mana_cost : float;
   killed : bool;
-  position : int option; (*for Board internal use?*)
+  id : int; (*autoincremented by empty_wrap >*)
 }
 
-let empty_wrap = { 
+let element_i_init = ref 0
+let incr_ret_id_init () = let i = !element_i_init in incr element_i_init; i
+let element_i_succ = ref 100
+let incr_ret_id () = let i = !element_i_succ in incr element_i_succ; 
+  (*Printf.printf "succ id specified : %d\n" i; *)
+  i
+
+let empty_wrap = {
   owner = PNone; 
   element = Empty; 
   mana_cost = 0.; 
   killed = false;
-  position = None 
+  id = 0 (*change this manually*)
+}
+
+let empty_wrap_init () = { 
+  empty_wrap with 
+  id = (let i = !element_i_init in 
+        incr element_i_init; 
+        (*Printf.printf "succ id specified : %d\n" i; *)
+        i)
 }
 
 type direction = Left | Right
@@ -74,3 +89,9 @@ type board_action =
 type board_move_conseq = 
   | Jumpover of element_wrap_active * element_wrap
   | Out_of_bounds of direction * element_wrap 
+
+(*
+type 'a tmp = 
+  | Jumpover of 'a * 'a
+  | Out_of_bounds of direction * 'a
+*)
