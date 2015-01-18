@@ -23,15 +23,12 @@ open Gametypes
 type t = element_wrap list
 
 let make n = 
-  List.make
-    ( if (n mod 2) <> 0 
-      then failwith "Board.make: N is not even." 
-      else n ) 
-    empty_wrap
-  |> List.map (fun e -> 
-      { e with id = incr_ret_id_init () } )
-(*< gomaybe is this map neccesary? - implemented when trying to correct bug
-  - why would empty cells get modified..*)
+  List.init 
+    ( if (n mod 2) <> 0 then failwith "Board.make: N must be an even number."
+      else if n < 2 then failwith "Board.make: N must be greater than 2."
+      else if n > 100 then failwith "Board.make: N must be less than 100."
+      else n )
+    ( fun i -> { empty_wrap with id = i } )
 
 let enum = List.enum
 
