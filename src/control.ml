@@ -62,7 +62,7 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
           (`From_actions actions) 
         |> Rules.set_possible_winner in
 
-      let _ = Visualize.run { gstate with board } in
+      let _ = Visualize.update { gstate with board } in
 
       let board = Board.remove_killed_elems board
 
@@ -84,10 +84,10 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
       |> Rules.set_possible_winner
       |> function
       | { winner = Some _ } as gstate -> 
-        let _ = Visualize.run gstate 
+        let _ = Visualize.update gstate 
         in gstate
       | gstate -> 
-        let _ = Visualize.run gstate 
+        let _ = Visualize.update gstate 
         in gameturn gstate ~rules ~visualizer ~synth (*..same players turn*)
 
     end
@@ -99,7 +99,7 @@ let gloop gstate_init ~rules ~visualizer ~synth =
   let module Synth = (val synth : Synth.S) in
   let module Visualize = (val visualizer : Visualizer.S) in
   let _ = Synth.synth_ghost2 [] in
-  let _ = Visualize.run gstate_init
+  let _ = Visualize.update gstate_init
   in
   let rec loop_if_no_winner = function
     | { winner = Some player; p0; p1 } -> 

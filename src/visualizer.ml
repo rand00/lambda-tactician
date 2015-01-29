@@ -21,7 +21,7 @@ open Core_rand00
 open Gametypes
 
 module type S = sig 
-  val run : Gstate.t -> unit
+  val update : Gstate.t -> unit
 end
 
 module Basic = struct 
@@ -87,14 +87,14 @@ module Basic = struct
     in 
     print full
 
-  let run gstate = board gstate print_endline
+  let update gstate = board gstate print_endline
 
 end
 
 module Basic_oneline = struct
   include Basic
   
-  let run gstate = board gstate (fun s ->
+  let update gstate = board gstate (fun s ->
       Sys.command "tput cuu1" |> ignore;
       print_endline s
     )
