@@ -44,21 +44,12 @@ let run_game () =
            mana = 1.; };
   } in
 
-  let _ = Synth.Server.run () in
-  let _ = print_endline "" in
-
-  let module SynthClient : Synth.ClientSig = struct
-    let c = Synth.Client.run () end in
-
-  let _ = at_exit (fun () -> Synth.quit_all SynthClient.c) in
-
-  (*goto: make load-screen while waiting for server with lwt_unix.sleep*)
-  let _ = Unix.sleep 4 in
+  (*goto: make load-screen while waiting for server with lwt_unix.sleep (call Synth.is_running to check)*)
   
   Control.gloop gstate
     ~rules:(module Rules.Basic)
     ~visualizer:(module Visualizer.Basic_oneline)
-    ~synth:(module Synth.Make (SynthClient) : Synth.S)
+    ~synth:(Synth.make())
 
 
 let _ = run_game ()

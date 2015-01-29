@@ -19,10 +19,9 @@
 open Batteries 
 open Core_rand00
 open Lwt
+open Osc_lwt.Udp 
 
-
-module Server = struct 
-  open Osc_lwt.Udp
+module SynthServer = struct 
 
   let run () =
     Lwt_main.run
@@ -35,26 +34,21 @@ module Server = struct
 
 end
 
-module Client = struct
-  open Osc_lwt.Udp
+module OSCClient = struct
 
-  let run () =
+  let init () =
     let localhost = Unix.inet_addr_of_string "127.0.0.1" 
     and port = 57110 in
     let addr = Lwt_unix.ADDR_INET (localhost, port)
     in (Lwt_main.run (Client.create())), addr
 
+  let quit_all (client, addr) =
+    Lwt_main.run (
+      Client.send client addr Osc.(Message {
+          address = "/quit"; arguments = [] })
+      >> Client.destroy client )
+
 end
-
-
-open Osc_lwt.Udp (*Client and Server modules rebound *)
-
-let quit_all (client, addr) =
-  Lwt_main.run (
-    Client.send client addr Osc.(Message {
-        address = "/quit"; arguments = [] })
-    >> Client.destroy client
-  )
 
 (** Internal functions - hide by mli*)
 
@@ -66,7 +60,7 @@ let next_node_id () =
   in i
 
 
-module type ClientSig = sig
+module type OSCClientWrapSig = sig
   val c : Osc_lwt.Udp.Client.t * Lwt_unix.sockaddr
 end
 
@@ -93,11 +87,11 @@ module type S = sig
 end
 
 (** Make functor for convenience*)
-module Make (SynthClient : ClientSig) = struct
+module MakeSynth (OSCClientWrap : OSCClientWrapSig) = struct
 
   open Osc
   
-  let client, addr = SynthClient.c
+  let client, addr = OSCClientWrap.c
   
   (** Types of synths args*)
 
@@ -172,7 +166,15 @@ module Make (SynthClient : ClientSig) = struct
 end
 
 
-
+let make () = 
+  
+  let _ = SynthServer.run () in
+  let _ = Unix.sleep 4 in
+  let module C : OSCClientWrapSig = struct 
+    let c = OSCClient.init () end in
+  let _ = at_exit (fun () -> OSCClient.quit_all C.c) 
+  in 
+  (module MakeSynth (C) : S)
 
 
 
