@@ -99,6 +99,7 @@ let gloop gstate_init ~rules ~visualizer ~synth =
   let module Synth = (val synth : Synth.S) in
   let module Visualize = (val visualizer : Visualizer.S) in
   let _ = Synth.synth_ghost2 [] in
+  let _ = print_endline "" in
   let _ = Visualize.update gstate_init
   in
   let rec loop_if_no_winner = function
