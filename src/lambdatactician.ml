@@ -47,10 +47,10 @@ let run_game () =
   let _ = Synth.Server.run () in
   let _ = print_endline "" in
 
-  let module C : Synth.CSig = struct
-    let client = Synth.Client.make () end in
+  let module SynthClient : Synth.ClientSig = struct
+    let c = Synth.Client.run () end in
 
-  let _ = at_exit (fun () -> Synth.quit_all C.client) in
+  let _ = at_exit (fun () -> Synth.quit_all SynthClient.c) in
 
   (*goto: make load-screen while waiting for server with lwt_unix.sleep*)
   let _ = Unix.sleep 4 in
@@ -58,7 +58,7 @@ let run_game () =
   Control.gloop gstate
     ~rules:(module Rules.Basic)
     ~visualizer:(module Visualizer.Basic_oneline)
-    ~synth:(module Synth.Make (C) : Synth.S)
+    ~synth:(module Synth.Make (SynthClient) : Synth.S)
 
 
 let _ = run_game ()

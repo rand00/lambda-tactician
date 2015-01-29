@@ -38,7 +38,7 @@ end
 module Client = struct
   open Osc_lwt.Udp
 
-  let make () =
+  let run () =
     let localhost = Unix.inet_addr_of_string "127.0.0.1" 
     and port = 57110 in
     let addr = Lwt_unix.ADDR_INET (localhost, port)
@@ -66,8 +66,8 @@ let next_node_id () =
   in i
 
 
-module type CSig = sig
-  val client : Osc_lwt.Udp.Client.t * Lwt_unix.sockaddr
+module type ClientSig = sig
+  val c : Osc_lwt.Udp.Client.t * Lwt_unix.sockaddr
 end
 
 module type S = sig
@@ -93,11 +93,11 @@ module type S = sig
 end
 
 (** Make functor for convenience*)
-module Make (C : CSig) = struct
+module Make (SynthClient : ClientSig) = struct
 
   open Osc
   
-  let client, addr = C.client
+  let client, addr = SynthClient.c
   
   (** Types of synths args*)
 
