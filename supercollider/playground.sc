@@ -1,3 +1,15 @@
+
+//-----------------------------------------------------------------------
+/** sending and receiving osc msg's (from osc server to osc server) (from oscdef)
+	-> I need to start a server @ ocaml if I want to msg super-collider
+**/
+n = NetAddr("127.0.0.1", 57120); // local machine
+OSCdef(\test, {|msg, time, addr, recvPort| \unmatching.postln}, '/chat', n); // def style
+
+m = NetAddr("127.0.0.1", 57120); // loopback
+m.sendMsg("/chat", "Hello App 1");
+
+
 //-----------------------------------------------------------------------
 /** Random shit from other sources ? >> delete on the fly when done **/
 
