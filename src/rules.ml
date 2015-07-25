@@ -42,38 +42,52 @@ let std_values = {
       more complex rulesets. 
 *)
 module type R1_Cost = sig 
+
   val return_cost : gstate:Gstate.t -> element -> float
   val apply_cost_to_element : gstate:Gstate.t -> element_wrap -> element_wrap
+
 end
 
 module type R2_Legality = sig
+
   val is_element_legal : gstate:Gstate.t -> element_wrap -> 
     [ `Legal of element_wrap 
     | `Illegal of element_wrap ]
+
 end
+
 module type R2Fun_Legality = functor (RCost : R1_Cost) -> R2_Legality
 
 (*Mana*)
 module type R_Mana = sig
-    val update_mana_from_element : gstate:Gstate.t -> element_wrap -> Gstate.t
-    val update_mana_from_actions : gstate:Gstate.t -> element_action list -> Gstate.t
+
+  val update_mana_from_element : gstate:Gstate.t -> element_wrap -> Gstate.t
+  val update_mana_from_actions : gstate:Gstate.t -> element_action list -> Gstate.t
+
 end
+
 module type RFun_Mana = functor (RCost : R1_Cost) -> R_Mana
 
 module type R3_DepMana = sig
+
   val update_player_mana : gstate:Gstate.t -> 
     [ `From_element of element_wrap 
     | `From_actions of element_action list ] -> Gstate.t
+
   val apply_punishment : gstate:Gstate.t -> element_wrap -> Gstate.t
+
 end
+
 module type R3Fun_DepMana = 
   functor (RCost : R1_Cost) -> 
   functor (RMana : RFun_Mana) -> R3_DepMana 
 
 (*Rest*)
 module type R4_ActionsPlus = sig
+
   val conseq_to_action : gstate:Gstate.t -> board_move_conseq -> element_action option
   val set_possible_winner : Gstate.t -> Gstate.t  
+
 end
 
 
@@ -103,71 +117,67 @@ module Basic1_cost : R1_Cost = struct
 
 end
 
-module Basic2_legality = 
-  functor (RCost : R1_Cost) -> struct 
+module Basic2_legality (RCost : R1_Cost) = struct
 
     let is_element_legal ~gstate elem = 
       if elem.mana_cost <= (Gstate.current_player_mana ~gstate) 
       then `Legal elem
       else `Illegal elem
 
-  end
+end
 
-module Basic_mana = 
-  functor (RCost : R1_Cost) -> struct
+module Basic_mana (RCost : R1_Cost) = struct
 
-    open Gstate
+  open Gstate
 
-    let update_mana_from_element ~gstate elem =
-      Gstate.add_player_mana ~gstate gstate.turn 
-        (Float.neg elem.mana_cost)
+  let update_mana_from_element ~gstate elem =
+    Gstate.add_player_mana ~gstate gstate.turn 
+      (Float.neg elem.mana_cost)
 
-    let update_mana_from_actions ~gstate =
-      let open Player in 
-      let open Gstate in
-      List.fold_left (fun gstate -> function
+  let update_mana_from_actions ~gstate =
+    let open Player in 
+    let open Gstate in
+    List.fold_left (fun gstate -> function
 
-          | Kill ( killer, killed ) -> 
-            Gstate.add_player_mana ~gstate killer.owner
-              (match killed.element with 
-                   | Lambda _ -> gstate.rvalues.actions.kill_lambda 
-                   | Symbol _ -> gstate.rvalues.actions.kill_symbol
-                   | _ -> 0. )
+        | Kill ( killer, killed ) -> 
+          Gstate.add_player_mana ~gstate killer.owner
+            (match killed.element with 
+             | Lambda _ -> gstate.rvalues.actions.kill_lambda 
+             | Symbol _ -> gstate.rvalues.actions.kill_symbol
+             | _ -> 0. )
 
-          | Application (({ element=(Lambda _) } as lambda), 
-                         ({ element=(Symbol _) } )) -> 
-            Gstate.add_player_mana ~gstate lambda.owner
-              gstate.rvalues.actions.application
+        | Application (({ element=(Lambda _) } as lambda), 
+                       ({ element=(Symbol _) } )) -> 
+          Gstate.add_player_mana ~gstate lambda.owner
+            gstate.rvalues.actions.application
 
-          | Application _ -> failwith "Rules:update_player_mana_from_actions: Wrong input"
+        | Application _ -> failwith "Rules:update_player_mana_from_actions: Wrong input"
 
-          | At_opponent elem -> 
-            Gstate.add_player_mana ~gstate elem.owner
-              elem.mana_cost
+        | At_opponent elem -> 
+          Gstate.add_player_mana ~gstate elem.owner
+            elem.mana_cost
 
-          | At_home elem -> 
-            Gstate.add_player_mana ~gstate elem.owner
-              elem.mana_cost
+        | At_home elem -> 
+          Gstate.add_player_mana ~gstate elem.owner
+            elem.mana_cost
 
-        ) gstate 
+      ) gstate 
 
-  end
+end
 
-module Basic3_dep_mana = 
-  functor (RCost : R1_Cost) -> 
-  functor (RManaFun : RFun_Mana) -> struct
+module Basic3_dep_mana (RCost : R1_Cost) (RManaFun : RFun_Mana) = struct
 
-    module RMana = RManaFun(RCost)
-    open Gstate
-    open Player
+  module RMana = RManaFun (RCost)
+  open Gstate
+  open Player
 
-    let update_player_mana ~gstate = function
-      | `From_element element -> RMana.update_mana_from_element ~gstate element
-      | `From_actions actions -> RMana.update_mana_from_actions ~gstate actions
+  let update_player_mana ~gstate = function
+    | `From_element element -> RMana.update_mana_from_element ~gstate element
+    | `From_actions actions -> RMana.update_mana_from_actions ~gstate actions
 
-    let apply_punishment = RMana.update_mana_from_element
+  let apply_punishment = RMana.update_mana_from_element
 
-  end
+end
 
 
 module Basic4_actions_plus = struct 
@@ -207,7 +217,7 @@ end
 module Basic : S = struct 
 
   include Basic1_cost
-  include Basic2_legality(Basic1_cost)
+  include Basic2_legality (Basic1_cost)
   include Basic3_dep_mana (Basic1_cost) (Basic_mana)
   include Basic4_actions_plus
 
