@@ -1,11 +1,11 @@
 S .
 S src
+S core_rand
 S tests
-S src/core_rand
 
-B _build/tests
 B _build/src
-B _build/src/core_rand
+B _build/core_rand
+B _build/tests
 
 PKG text
 PKG batteries 
