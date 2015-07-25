@@ -168,8 +168,8 @@ end
 
 let make () = 
   
-  let _ = SynthServer.run () in
-  let _ = Unix.sleep 4 in
+  let _ = SynthServer.run () in (*goto : grep for 'server ready' in output of scsynth and get return-msg from thread*)
+  let _ = Unix.sleep 4 in 
   let module C : OSCClientWrapSig = struct 
     let c = OSCClient.init () end in
   let _ = at_exit (fun () -> OSCClient.quit_all C.c) 

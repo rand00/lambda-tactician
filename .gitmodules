@@ -1,6 +1,3 @@
 [submodule "core_rand"]
 	path = core_rand
 	url = https://github.com/rand00/Core_rand00.git
-[submodule "lib_osc"]
-	path = lib_osc
-	url = https://github.com/johnelse/ocaml-osc.git
