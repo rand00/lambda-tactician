@@ -16,9 +16,10 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 open Batteries
-open Core_rand00
+open BatExt_rand00
 open Gametypes
 
+(* removing dependencies on camlp4 + pcre lib - will use Re for regexps instead?
 let match_symbol = function
   | <:re< [" \t"]* ["xX"]{1} [" \t"]* >> -> Some X
   | <:re< [" \t"]* ["yY"]{1} [" \t"]* >> -> Some Y
@@ -35,4 +36,4 @@ let rec match_element = function
   | <:re< [" \t"]* ( ["xXyYzZ"] as sym ) >> -> 
     Some (Symbol (Option.get (match_symbol sym)))
   | _ -> None
-
+*)

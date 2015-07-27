@@ -16,7 +16,7 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 open Batteries
-open Core_rand00
+open BatExt_rand00
 open Gametypes
 open Player 
 

@@ -17,7 +17,7 @@
 *)
 
 open Batteries
-open Core_rand00 
+open BatExt_rand00
 open Gametypes
 open Gstate
 open Player
@@ -44,7 +44,12 @@ let run_game () =
            mana = 1.; };
   } in
 
-  (*goto: make load-screen while waiting for server with lwt_unix.sleep (call Synth.is_running to check)*)
+  (*goto: make load-screen while waiting for server 
+    . make Synth.make return 'a Lwt.t 
+    . and make a visualizer loadingscreen-thread depend on this
+      by signaling to stop anim via mvar?
+      > then join threads before beginning gloop
+  *)
   
   Control.gloop gstate
     ~rules:(module Rules.Basic)

@@ -17,13 +17,16 @@
 *)
 
 open Batteries
-open Core_rand00 
+open BatExt_rand00
 open Gametypes
 open Gstate
 
 let rec gameturn gstate ~rules ~visualizer ~synth = 
 
   let module Rules = (val rules : Rules.S) in
+  (* > goto change to a record type? - should contain two-way mailbox comm
+     . in-mb to check for load-done
+     . out-mb to send new state *)
   let module Visualize = (val visualizer : Visualizer.S) in
   let module Synth = (val synth : Synth.S) in
   
@@ -61,7 +64,8 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
         Rules.update_player_mana ~gstate
           (`From_actions actions) 
         |> Rules.set_possible_winner in
-
+      
+      (* > goto change to an update of a mailbox *)
       let _ = Visualize.update { gstate with board } in
 
       let board = Board.remove_killed_elems board

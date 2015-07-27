@@ -17,7 +17,7 @@
 *)
 
 open Batteries 
-open Core_rand00
+open BatExt_rand00
 open Lwt
 open Osc_lwt.Udp 
 

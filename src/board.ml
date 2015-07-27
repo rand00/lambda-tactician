@@ -17,7 +17,7 @@
 *)
 
 open Batteries
-open Core_rand00 
+open BatExt_rand00
 open Gametypes
 
 type t = element_wrap list
