@@ -45,16 +45,28 @@ let run_game () =
   } in
 
   (*goto: make load-screen while waiting for server 
-    . make Synth.make return 'a Lwt.t 
     . and make a visualizer loadingscreen-thread depend on this
       by signaling to stop anim via mvar?
-      > then join threads before beginning gloop
+      > Visualizer.loading loops until mvar is filled
+      > then join threads before beginning gloop 
+        (as the load-animation is potentially not interrupted suddenly?)
   *)
-  
+  let synth_client = 
+    Lwt_main.run 
+      ( let open Lwt in
+        let open Lwt_main in
+        SC.Server.run_with_lwt () >>= function
+        | false -> fail_with "Lambdatactian: SuperCollider server (scsynth) failed to start."
+        | true -> 
+          let%lwt c = return (SC.Client.make ()) in
+          let () = at_exit (fun () -> return (SC.Client.quit_all c))
+          in return c )
+  in
   Control.gloop gstate
     ~rules:(module Rules.Basic)
+    (*>goto change input to be a function instead (no need for more functions than one..?*)
     ~visualizer:(module Visualizer.Basic_oneline)
-    ~synth:(Synth.make())
+    ~synth:synth_client
 
 
 let _ = run_game ()
