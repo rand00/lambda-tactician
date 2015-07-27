@@ -1,3 +1,6 @@
 [submodule "core_rand"]
-	path = core_rand
+	path = lib_batext_rand00
 	url = https://github.com/rand00/Core_rand00.git
+[submodule "lib_sc"]
+	path = lib_sc
+	url = https://github.com/rand00/ocaml_supercollider_interface
