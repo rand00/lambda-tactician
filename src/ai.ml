@@ -17,7 +17,7 @@
 *)
 
 open Batteries 
-open Core_rand00
+open BatExt_rand00
 open Gametypes
 
 let _ = Random.self_init ()
@@ -57,7 +57,7 @@ module NoSuicideAI = struct
   let next_move (_:Board.t) mana return_cost =
     let pct_lambda, pct_symbol = (0.1, 0.5) in
     let res_mvar = create_empty () in
-    lwt () = join [
+    let%lwt () = join [
         Lwt_unix.sleep ((Random.float 1.5) +. 4.);
 
         let e = random_element (pct_lambda, pct_symbol) in
