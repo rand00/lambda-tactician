@@ -28,7 +28,6 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
      . in-mb to check for load-done
      . out-mb to send new state *)
   let module Visualize = (val visualizer : Visualizer.S) in
-  let module Synth = (val synth : Synth.S) in
   
   Gstate.next_player_element ~gstate (Rules.return_cost ~gstate)
   |> Rules.apply_cost_to_element ~gstate
@@ -38,8 +37,10 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 
     begin 
  
-      let _ = Synth.ratata [ (match gstate.turn with 
-          | P0 -> `PanR | P1 | PNone -> `PanL ) ] in
+      let _ = SC.Synth.synth synth "ratata" 
+          [ (match gstate.turn with 
+                | P0 -> ("panfrom", `I (-1)) 
+                | P1 | PNone -> "panfrom", `I 1) ] in
 
       let gstate = Rules.update_player_mana 
           (`From_element element) 
@@ -80,9 +81,10 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 
     begin
 
-      (*goto make different synth for illegal move*)
-      let _ = Synth.ratata [ (match gstate.turn with 
-          | P0 -> `PanR | P1 | PNone -> `PanL ) ] in
+      let _ = SC.Synth.synth synth "ratata" 
+          [ (match gstate.turn with 
+                | P0 -> ("panfrom", `I (-1)) 
+                | P1 | PNone -> "panfrom", `I 1) ] in
 
       Rules.apply_punishment illegal_elem ~gstate
       |> Rules.set_possible_winner
@@ -100,9 +102,8 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
 (* ~iinterp ; fcmod*)
 let gloop gstate_init ~rules ~visualizer ~synth = 
   let open Player in
-  let module Synth = (val synth : Synth.S) in
   let module Visualize = (val visualizer : Visualizer.S) in
-  let _ = Synth.synth_ghost2 [] in
+  let _ = SC.Synth.synth synth "synth_ghost2" [] in
   let _ = print_endline "" in
   let _ = Visualize.update gstate_init
   in
