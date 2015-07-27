@@ -1,7 +1,9 @@
 true: thread
-true: syntax(camlp4o)
-true: package(text,text.pcre,text.pcre-syntax,batteries)
-true: package(lwt,lwt.syntax,lwt.unix)
+true: package(batteries)
+true: package(lwt,lwt.unix,lwt.ppx)
 true: package(osc,osc.lwt)
-<lib_osc>: -traverse
+true: package(re,re.pcre)
+
+#<lib_osc>: -traverse
+#true: syntax(camlp4o)
 #true: cflags(-bin-annot)

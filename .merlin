@@ -1,16 +1,18 @@
 S .
 S src
-S core_rand
+S lib_batext_rand00/src
+S lib_sc/src
 S tests
 
 B _build/src
-B _build/core_rand
+B _build/lib_batext_rand00/src
+B _build/lib_sc/src
 B _build/tests
 
-PKG text
+PKG re re.pcre
 PKG batteries 
-PKG lwt lwt.unix lwt.syntax
+PKG lwt lwt.unix lwt.ppx
 PKG osc osc.lwt
 PKG lambda-term
 
-EXT lwt
+#EXT lwt
