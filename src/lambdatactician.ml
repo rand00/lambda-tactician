@@ -22,8 +22,8 @@ open Gametypes
 open Gstate
 open Player
 
-let synth_client_while_loadscr visualizer = 
-  let module V = (val visualizer : Visualizer.S) in
+let start_synthsystem_while_loadscr visualizer = 
+  let module V = (val visualizer: Visualizer.S) in
   Lwt_main.run 
     ( let open Lwt in
       let open Lwt_main in 
@@ -62,7 +62,7 @@ let run_game () =
   in
   let visualizer = 
     (module Visualizer.Basic_oneline : Visualizer.S) in
-  let synth = synth_client_while_loadscr visualizer
+  let synth = start_synthsystem_while_loadscr visualizer
   in 
   Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
 
