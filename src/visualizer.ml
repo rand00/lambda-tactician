@@ -22,7 +22,7 @@ open Gametypes
 
 module type S = sig 
   val update : Gstate.t -> unit
-  val loading : 'a Lwt.t -> unit Lwt.t 
+  val loading : gstate:Gstate.t -> 'a Lwt.t -> unit Lwt.t 
 end
 
 module Basic = struct 
@@ -33,11 +33,16 @@ module Basic = struct
   let sep, fill = "|", "_" 
   let mana_fill = "."
   let mana_bar = "|"
+  let len_mana, len_name, len_elem = 9, 5, 3
+  let len_bbuffer = 1
+  let columns b = 
+    (len_mana * 2) + (len_name * 2) + (len_bbuffer * 2) 
+    + (len_elem * (Board.length b))
 
   let strlst_of_elem = function 
     | Lambda (s0, s1) -> [ symbol_to_str s0; "."; symbol_to_str s1 ]
     | Symbol sym -> [ fill; symbol_to_str sym; fill ]
-    | Empty -> List.make 3 fill
+    | Empty -> List.make len_elem fill
 
   let str_of_pname ~gstate lim pid = 
     let name = Gstate.player_name ~gstate pid in
@@ -68,7 +73,6 @@ module Basic = struct
     |> String.concat ""
 
   let board gstate print = 
-    let len_mana, len_name = 9, 5 in
     let elems = List.of_enum (Board.enum gstate.board) in
     let board_str = String.concat ""
         (List.concat 
@@ -79,18 +83,18 @@ module Basic = struct
                         | _ -> ["_#_"] )
                     | false -> strlst_of_elem elem.element) :: acc )
              ) elems [[sep]] )) in
+    let bbuffer = String.make len_bbuffer ' ' in
     let full = String.concat ""
         [ str_of_pmana ~gstate len_mana P0;
           str_of_pname ~gstate len_name P0;
-          " "; board_str; " ";
+          bbuffer; board_str; bbuffer;
           str_of_pname ~gstate len_name P1;
           str_of_pmana ~gstate len_mana P1 ]
-    in 
-    print full
+    in print full
 
   let update gstate = board gstate print_endline
 
-  let loading thread = 
+  let loading ~gstate thread = 
     let open Lwt in
     let open Lwt_mvar in
     let rec loop () =
@@ -108,6 +112,24 @@ module Basic_oneline = struct
       Sys.command "tput cuu1" |> ignore;
       print_endline s
     )
+
+  let loading ~gstate thread = 
+    let open Lwt in
+    let open Lwt_mvar in
+    let tmin_dur = Lwt_unix.sleep 0. in
+    let cols = columns gstate.Gstate.board in
+    let achars = [|"|"; "/";"-"; "\\"|] in
+    let sleep_frame = 0.5 /. (float (Array.length achars)) in
+    let output = String.make cols '|' in
+    let rec loop n = 
+      return (String.blit achars.(n) 0 output (cols / 2) 1) >>
+      Lwt_io.printl output >>
+      Lwt_unix.system "tput cuu1" >>= fun _ ->
+      Lwt_unix.sleep sleep_frame >>= fun () -> 
+      if is_sleeping thread || is_sleeping tmin_dur then 
+        loop (succ n mod 4)
+      else return ()
+    in loop 0
 
 end
 

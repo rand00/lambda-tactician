@@ -22,7 +22,7 @@ open Gametypes
 open Gstate
 open Player
 
-let start_synthsystem_while_loadscr visualizer = 
+let start_synthsystem_while_loadscr ~gstate visualizer = 
   let module V = (val visualizer: Visualizer.S) in
   Lwt_main.run 
     ( let open Lwt in
@@ -32,7 +32,7 @@ let start_synthsystem_while_loadscr visualizer =
             | false -> fail_with
               "Lambdatactian: SuperCollider server (scsynth) failed to start."
             | true -> SC.Client.Lwt.make ()) in
-      let loadscr = V.loading client
+      let loadscr = V.loading ~gstate client
       in 
       let%lwt () = loadscr <&> (client >>= fun _ -> return ())
       in client
@@ -62,7 +62,7 @@ let run_game () =
   in
   let visualizer = 
     (module Visualizer.Basic_oneline : Visualizer.S) in
-  let synth = start_synthsystem_while_loadscr visualizer
+  let synth = start_synthsystem_while_loadscr ~gstate visualizer
   in 
   Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
 
