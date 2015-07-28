@@ -22,19 +22,17 @@ open Gametypes
 open Gstate
 open Player
 
-let synth_client_while_loadscr () = 
+let synth_client_while_loadscr visualizer = 
+  let module V = (val visualizer : Visualizer.S) in
   Lwt_main.run 
     ( let open Lwt in
       let open Lwt_main in 
       let client = 
-        SC.Server.run_with_lwt () >>= ( function
+        SC.Server.Lwt.run () >>= ( function
             | false -> fail_with
               "Lambdatactian: SuperCollider server (scsynth) failed to start."
-            | true -> 
-              let%lwt client = return (SC.Client.make ()) in
-              let () = at_exit (fun () -> return (SC.Client.quit_all client)) 
-              in return client ) in
-      let loadscr = Visualizer.Basic_oneline.loading client
+            | true -> SC.Client.Lwt.make ()) in
+      let loadscr = V.loading client
       in 
       let%lwt () = loadscr <&> (client >>= fun _ -> return ())
       in client
@@ -62,11 +60,11 @@ let run_game () =
            mana = 1.; };
   } 
   in
-  Control.gloop gstate
-    ~rules:(module Rules.Basic)
-    (*>goto change input to be a function instead (no need for more functions than one..?*)
-    ~visualizer:(module Visualizer.Basic_oneline)
-    ~synth:(synth_client_while_loadscr ())
+  let visualizer = 
+    (module Visualizer.Basic_oneline : Visualizer.S) in
+  let synth = synth_client_while_loadscr visualizer
+  in 
+  Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
 
 
 let _ = run_game ()

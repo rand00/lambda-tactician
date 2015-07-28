@@ -22,6 +22,7 @@ open Gametypes
 
 module type S = sig 
   val update : Gstate.t -> unit
+  val loading : 'a Lwt.t -> unit Lwt.t 
 end
 
 module Basic = struct 
@@ -89,6 +90,15 @@ module Basic = struct
 
   let update gstate = board gstate print_endline
 
+  let loading thread = 
+    let open Lwt in
+    let open Lwt_mvar in
+    let rec loop () =
+      Lwt_unix.sleep 2. >>= fun () -> 
+      if is_sleeping (thread) then loop ()
+      else return ()
+    in loop ()
+
 end
 
 module Basic_oneline = struct
@@ -98,15 +108,6 @@ module Basic_oneline = struct
       Sys.command "tput cuu1" |> ignore;
       print_endline s
     )
-
-  let loading thread = 
-    let open Lwt in
-    let open Lwt_mvar in
-    let rec loop () =
-      Lwt_unix.sleep 2. >>= fun () -> 
-      if is_sleeping (thread) then loop ()
-      else return ()
-    in loop ()
 
 end
 
