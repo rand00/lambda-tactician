@@ -22,6 +22,29 @@ open Gametypes
 open Gstate
 open Player
 
+let synth_client_while_loadscr () = 
+  Lwt_main.run 
+    ( let open Lwt in
+      let open Lwt_main in
+      let open Lwt_mvar 
+      in
+      let is_done = create_empty () in
+      let loadscr = Visualizer.Basic_oneline.loading is_done
+      and client = 
+        SC.Server.run_with_lwt () >>= ( function
+            | false -> fail_with
+              "Lambdatactian: SuperCollider server (scsynth) failed to start."
+            | true -> 
+              let%lwt client = return (SC.Client.make ()) in
+              let () = at_exit (fun () -> return (SC.Client.quit_all client)) 
+              in put is_done () >> return client )
+      in 
+      let%lwt () = join [
+          loadscr;
+          (client >>= fun _ -> return ()) ] 
+      in client
+    )
+
 let run_game () =
   
   let gstate = {
@@ -42,31 +65,13 @@ let run_game () =
            position = Right;
            next_move = Ai.NoSuicideAI.next_move;
            mana = 1.; };
-  } in
-
-  (*goto: make load-screen while waiting for server 
-    . and make a visualizer loadingscreen-thread depend on this
-      by signaling to stop anim via mvar?
-      > Visualizer.loading loops until mvar is filled
-      > then join threads before beginning gloop 
-        (as the load-animation is potentially not interrupted suddenly?)
-  *)
-  let synth_client = 
-    Lwt_main.run 
-      ( let open Lwt in
-        let open Lwt_main in
-        SC.Server.run_with_lwt () >>= function
-        | false -> fail_with "Lambdatactian: SuperCollider server (scsynth) failed to start."
-        | true -> 
-          let%lwt c = return (SC.Client.make ()) in
-          let () = at_exit (fun () -> return (SC.Client.quit_all c))
-          in return c )
+  } 
   in
   Control.gloop gstate
     ~rules:(module Rules.Basic)
     (*>goto change input to be a function instead (no need for more functions than one..?*)
     ~visualizer:(module Visualizer.Basic_oneline)
-    ~synth:synth_client
+    ~synth:(synth_client_while_loadscr ())
 
 
 let _ = run_game ()
