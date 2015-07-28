@@ -29,6 +29,8 @@ let make n =
       else n )
     ( fun i -> { empty_wrap with id = i } )
 
+let length = List.length
+
 let enum = List.enum
 
 (**not in use*)

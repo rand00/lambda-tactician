@@ -20,6 +20,8 @@ type t
 
 val make : int -> t
 
+val length : t -> int
+
 val enum : t -> Gametypes.element_wrap BatEnum.t
 
 val eval_action : t -> Gametypes.element_action -> t
