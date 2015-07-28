@@ -26,7 +26,6 @@ let make n =
   List.init 
     ( if (n mod 2) <> 0 then failwith "Board.make: N must be an even number."
       else if n < 2 then failwith "Board.make: N must be greater than 2."
-      else if n > 100 then failwith "Board.make: N must be less than 100."
       else n )
     ( fun i -> { empty_wrap with id = i } )
 
