@@ -25,23 +25,18 @@ open Player
 let synth_client_while_loadscr () = 
   Lwt_main.run 
     ( let open Lwt in
-      let open Lwt_main in
-      let open Lwt_mvar 
-      in
-      let is_done = create_empty () in
-      let loadscr = Visualizer.Basic_oneline.loading is_done
-      and client = 
+      let open Lwt_main in 
+      let client = 
         SC.Server.run_with_lwt () >>= ( function
             | false -> fail_with
               "Lambdatactian: SuperCollider server (scsynth) failed to start."
             | true -> 
               let%lwt client = return (SC.Client.make ()) in
               let () = at_exit (fun () -> return (SC.Client.quit_all client)) 
-              in put is_done () >> return client )
+              in return client ) in
+      let loadscr = Visualizer.Basic_oneline.loading client
       in 
-      let%lwt () = join [
-          loadscr;
-          (client >>= fun _ -> return ()) ] 
+      let%lwt () = loadscr <&> (client >>= fun _ -> return ())
       in client
     )
 

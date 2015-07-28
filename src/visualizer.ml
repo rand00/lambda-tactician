@@ -99,15 +99,13 @@ module Basic_oneline = struct
       print_endline s
     )
 
-  let loading is_done = 
+  let loading thread = 
     let open Lwt in
     let open Lwt_mvar in
-    let done_ = take is_done in
     let rec loop () =
       Lwt_unix.sleep 2. >>= fun () -> 
-      if is_sleeping (done_) then
-        loop ()
-      else done_
+      if is_sleeping (thread) then loop ()
+      else return ()
     in loop ()
 
 end
