@@ -19,4 +19,19 @@
 open Batteries 
 open BatExt_rand00
 
-(*goto place helper functions for synths here - if/when wanted*)
+
+let run_with_loadscreen ~gstate visualizer = 
+  let module V = (val visualizer: Visualizer.S) in
+  Lwt_main.run 
+    ( let open Lwt in
+      let open Lwt_main in 
+      let client = 
+        SC.Server.Lwt.run () >>= ( function
+            | false -> fail_with
+              "Lambdatactian: SuperCollider server (scsynth) failed to start."
+            | true -> SC.Client.Lwt.make ()) in
+      let loadscr = V.loading ~gstate client
+      in 
+      let%lwt () = loadscr <&> (client >>= fun _ -> return ())
+      in client
+    )
