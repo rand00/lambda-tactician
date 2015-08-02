@@ -54,18 +54,22 @@ module NoSuicideAI = struct
   open Lwt
   open Lwt_mvar
 
-  let next_move (_:Board.t) mana return_cost =
-    let pct_lambda, pct_symbol = (0.1, 0.5) in
-    let res_mvar = create_empty () in
-    let%lwt () = join [
-        Lwt_unix.sleep ((Random.float 1.5) +. 4.);
+  (*goto add parameter; mvar where to put other kinds of input 
+    that is relevant for visualization? (not relevant for AI, but players)*)
+  let next_move : 
+    Board.t -> Player.mana -> (Gametypes.element -> float) -> Gametypes.element Lwt.t
+    = fun _ mana get_cost -> 
+      let pct_lambda, pct_symbol = (0.1, 0.5) in
+      let res_mvar = create_empty () in
+      let%lwt () = join [
+          Lwt_unix.sleep ((Random.float 1.5) +. 4.);
 
-        let e = random_element (pct_lambda, pct_symbol) in
-        if return_cost e > mana then
-          put res_mvar Empty
-        else
-          put res_mvar e
-      ]
-    in take res_mvar
+          let e = random_element (pct_lambda, pct_symbol) in
+          if get_cost e > mana then
+            put res_mvar Empty
+          else
+            put res_mvar e
+        ]
+      in take res_mvar
 
 end
