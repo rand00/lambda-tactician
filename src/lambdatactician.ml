@@ -42,11 +42,11 @@ let run_game () =
            location = Local;
            position = Right;
            next_move = Ai.NoSuicideAI.next_move;
-           mana = 1.; };
+           mana = 1.; 
+         };
   } 
   in
-  let visualizer = 
-    (module Visualizer.Basic_oneline : Visualizer.S) in
+  let visualizer = (module Visualizer.Basic_oneline : Visualizer.S) in
   let synth = Synth.run_with_loadscreen ~gstate visualizer
   in 
   Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
