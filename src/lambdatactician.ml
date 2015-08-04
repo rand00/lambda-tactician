@@ -46,7 +46,7 @@ let run_game () =
          };
   } 
   in
-  let visualizer = (module Visualizer.Basic_oneline : Visualizer.S) in
+  let visualizer = (module Visualizer.Term.Basic.Oneline : Visualizer.S) in
   let synth = Synth.run_with_loadscreen ~gstate visualizer
   in 
   Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
