@@ -21,6 +21,7 @@ open BatExt_rand00
 open Gametypes
 
 module type S = sig 
+  val suggest_len : unit -> int
   val update : Gstate.t -> unit
   val loading : gstate:Gstate.t -> wait_for:'a Lwt.t -> unit Lwt.t 
 end
@@ -38,11 +39,23 @@ module Term = struct
     let len_mana, len_name, len_elem = 9, 5, 3
     let len_bbuffer = 1
 
-    let columns b = 
-      let len_board = (Board.length b) in
+    let columns_aux len_board = 
       ((len_mana + 2) * 2) + (len_name * 2) + (len_bbuffer * 2) 
       + (len_elem * len_board) 
       + ((len_board + 1) * String.length sep)
+    
+    let columns b = 
+      let len_board = (Board.length b) in
+      columns_aux len_board
+
+    let suggest_len () = 
+      let term_cols = Sys.term_ncolumns () in
+      let _ = Printf.printf "term # cols: %d\n" term_cols in
+      let rec iter_find len = 
+        let nxt_len = columns_aux len in
+        if nxt_len > term_cols then max (len-2) 4 else iter_find (len + 2)
+      in
+      iter_find 4
 
     let strlst_of_elem = function 
       | Lambda (s0, s1) -> [ symbol_to_str s0; "."; symbol_to_str s1 ]
@@ -109,6 +122,8 @@ module Term = struct
       in loop ()
 
     module Oneline = struct
+
+      let suggest_len = suggest_len
 
       let update gstate = board gstate (fun s ->
           Sys.command "tput cuu1" |> ignore;

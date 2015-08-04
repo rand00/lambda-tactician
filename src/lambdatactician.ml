@@ -25,10 +25,13 @@ open Player
 
 let run_game () =
   
+  let visualizer = (module Visualizer.Term.Basic.Oneline : Visualizer.S) in
+  let module V = (val visualizer) in
+
   let gstate = {
     winner = None;
     turn = P0;
-    board = Board.make 16;
+    board = Board.make (V.suggest_len ());
     rvalues = Rules.std_values;
 
     p0 = { id = P0; name = "Hansi";
@@ -46,10 +49,8 @@ let run_game () =
          };
   } 
   in
-  let visualizer = (module Visualizer.Term.Basic.Oneline : Visualizer.S) in
   let synth = Synth.run_with_loadscreen ~gstate visualizer
-  in 
-  Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
+  in Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
 
 
 let _ = run_game ()
