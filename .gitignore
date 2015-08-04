@@ -1,3 +1,6 @@
+*.out
+*.out.png
+*.out.svg
 *.annot
 *.cmo
 *.cma
