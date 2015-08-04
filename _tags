@@ -3,6 +3,7 @@ true: package(batteries)
 true: package(lwt,lwt.unix,lwt.ppx)
 true: package(osc,osc.lwt)
 true: package(re,re.pcre)
+true: package(lambda-term)
 
 #<lib_osc>: -traverse
 #true: syntax(camlp4o)
