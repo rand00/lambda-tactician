@@ -63,22 +63,20 @@ let next_player_element ~gstate return_cost =
            gstate.board 
            gstate.p0.mana
            return_cost)
-    in { owner = P0;
+    in { (empty_wrap_init ()) with
+         owner = P0;
          element = next_elem;
-         mana_cost = 0.;
-         killed = false;
-         id = incr_ret_id () }
+       }
   | P1 -> 
     let next_elem = Lwt_main.run
         (gstate.p1.next_move
            gstate.board 
            gstate.p1.mana
            return_cost)
-    in { owner = P1;
+    in { (empty_wrap_init ()) with
+         owner = P1;
          element = next_elem;
-         mana_cost = 0.;
-         killed = false;
-         id = incr_ret_id () } 
+       }
   | PNone -> failwith "Gstate: PNone is no player"
 
 let add_player_mana ~gstate pid diff = 

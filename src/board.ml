@@ -62,11 +62,28 @@ let eval_action board = function
     |> List.fold_left (fun acc e -> 
         (*Printf.printf "e.id = '%d' & lambda_wrap.id = '%d'\n" e.id lambda_wrap.id;*)
         if e.id = lambda_wrap.id then 
-          { e with element = Symbol lamb_out } :: acc 
+          { e with 
+            element = Symbol lamb_out;
+            visual_state = { 
+              e.visual_state with
+              applied = (true, 0);
+            };
+          } :: acc 
         else e :: acc)
       []
          
   | At_home _ | At_opponent _ -> board
+
+let increment_time = List.fold_left (fun acc e -> 
+    { e with 
+      visual_state = {
+        age = succ e.visual_state.age;
+        applied = 
+          let (is_app, since) as v = e.visual_state.applied in
+          if is_app then is_app, succ since else v
+      }
+    } :: acc
+  ) []
 
 (**not in use*)
 let rec zipswitch_a0 ?(append=[]) ?(remove_last=false) = function

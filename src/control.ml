@@ -24,11 +24,14 @@ open Gstate
 let rec gameturn gstate ~rules ~visualizer ~synth = 
 
   let module Rules = (val rules : Rules.S) in
-  (* > goto change to a record type? - should contain two-way mailbox comm
-     . in-mb to check for load-done
-     . out-mb to send new state *)
-  let module Visualize = (val visualizer : Visualizer.S) in
-  
+  (* > should contain two-way mailbox/signal comm (maybe both?)
+     . out-mb to send new game state 
+       (can be a signal_send function instead of mb: just keep "update func") 
+     . in-mb to check for visualizer anim done
+       (> is needed? .. maybe not yet just find a way to timeout signals so they stop
+       and are GC'ed)    *)
+  let module Visualize = (val visualizer : Visualizer.S) 
+  in
   Gstate.next_player_element ~gstate (Rules.return_cost ~gstate)
   |> Rules.apply_cost_to_element ~gstate
   |> Rules.is_element_legal ~gstate
@@ -64,16 +67,16 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
       let gstate = 
         Rules.update_player_mana ~gstate
           (`From_actions actions) 
-        |> Rules.set_possible_winner in
-      
-      (* > goto change to an update of a mailbox *)
-      let _ = Visualize.update { gstate with board } in
+        |> Rules.set_possible_winner 
+        |> fun gstate -> { gstate with board } in
 
-      let board = Board.remove_killed_elems board
+      let _ = Visualize.update gstate in
 
-      in { gstate with 
-           turn = (Player.opposite gstate.turn);
-           board }
+      let board = 
+        Board.remove_killed_elems board
+        |> Board.increment_time 
+
+      in { gstate with turn = (Player.opposite gstate.turn); board }
 
     end
 

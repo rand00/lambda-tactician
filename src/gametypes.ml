@@ -16,9 +16,9 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
 
-type symbol = X | Y | Z
-
 type player_id = P0 | P1 | PNone
+
+type symbol = X | Y | Z
 
 type element = 
   | Lambda of symbol * symbol
@@ -41,34 +41,44 @@ let element_to_str = function
   | Symbol sym -> "sym:"^(symbol_to_str sym)
   | Empty -> "empty"
 
+(* # of gameturns something has been applied*)
+type ngameturns = int
+
+type element_visual_state = {
+  applied : bool * ngameturns;
+  age : ngameturns;
+}
+
 type element_wrap = {
   owner : player_id;
   element : element;
   mana_cost : float;
   killed : bool;
-  id : int; (*autoincremented by empty_wrap >*)
+  visual_state : element_visual_state;
+  id : int; (*autoincremented by 'empty_wrap_init' >*)
 }
 
 let element_i_init = ref 0
 let incr_ret_id_init () = let i = !element_i_init in incr element_i_init; i
 let element_i_succ = ref 100
-let incr_ret_id () = let i = !element_i_succ in incr element_i_succ; 
-  (*Printf.printf "succ id specified : %d\n" i; *)
-  i
+let incr_ret_id () = let i = !element_i_succ in incr element_i_succ; i
 
 let empty_wrap = {
   owner = PNone; 
   element = Empty; 
   mana_cost = 0.; 
   killed = false;
-  id = 0 (*change this manually*)
+  visual_state = {
+    applied = (false, 0);
+    age = 0;
+  };
+  id = 0
 }
 
 let empty_wrap_init () = { 
   empty_wrap with 
   id = (let i = !element_i_init in 
         incr element_i_init; 
-        (*Printf.printf "succ id specified : %d\n" i; *)
         i)
 }
 
