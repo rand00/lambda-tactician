@@ -1,3 +1,4 @@
+open Batteries
 
 (**Abstract type of animations*)
 
@@ -13,6 +14,20 @@ type 'a state = {
   c : 'a;
 (*  prev : 'a option;*)
 }
+
+let std_state = {
+  c = ""; 
+}
+
+let rec state_eq s s' = match s, s' with
+  | Al (le, _), Al (le', _) -> begin
+      try List.fold_right2 (fun e e' eq -> 
+          eq && state_eq e e'
+        ) le le' true
+      with LazyList.Different_list_size _ -> false
+    end
+  | Ae (state, _), Ae (state', _) -> state = state'
+  | _ -> false
 
 let map_rules e = function 
   | Some r -> r e
@@ -36,32 +51,61 @@ let eval ~cat ~get =
 open Lwt
 open Lwt_react
 
-let (>|~) = (fun e f -> E.map f e)
+let (>|~) = (fun e f -> S.map f e)
 
-let frames, send_frame = E.create () 
-(*let print_frame = E.map (Lwt_io.printf "%d\n") frames*)
+let frames, send_frame = E.create ()
+(*let print_frame = S.map (Lwt_io.printf "%d\n") frames*)
 
-let std_state = {
-  c = ""; 
-}
+let frames_s = S.hold 0 frames
 
-let anim = frames >|~ fun frame_n -> 
-  Al ([ 
-      Ae ({ std_state with c = "[" }, None);
-      Ae ({ std_state with c = "" },
-         Some (fun _ -> match frame_n mod 4 with
-              | 0 -> { c = "   " }
-              | 1 -> { c = "|  " }
-              | 2 -> { c = "|| " }
-              | 3 -> { c = "|||" }
-            ));
-      Ae ({ std_state with c = "]" }, None);
-    ], None)
-  |> incr_anim
+(*goto this is an interesting but weird definition where both a signal and event of frames is used... 
+  - how to make more clean alternative? 
+      => fix need a function that will give same value on second update step (with equal input as before)*)
+let anim = 
+  let anim_def = 
+    Al ([ 
+        Ae ({ std_state with c = "[" }, Some (function 
+            | { c = "[" } -> { c = "-" }
+            | _ -> { c = "[" }
+          ));
+        Ae ({ std_state with c = "" },
+            Some (fun _ -> match S.value frames_s mod 4 with
+                | 0 -> { c = "   " }
+                | 1 -> { c = "|  " }
+                | 2 -> { c = "|| " }
+                | 3 -> { c = "|||" }
+              ));
+        Ae ({ std_state with c = "]" }, None);
+      ], None)
+    |> incr_anim
+  in S.fold ~eq:state_eq (fun anim_acc _ -> incr_anim anim_acc) anim_def frames
+
+(*
+let anim = 
+  let anim_def = 
+    Al ([ 
+        Ae ({ std_state with c = "[" }, Some (function 
+            | { c = "[" } -> { c = "-" }
+            | _ -> { c = "[" }
+          ));
+        Ae ({ std_state with c = "" },
+            Some (fun _ -> match S.value frames mod 4 with
+                | 0 -> { c = "   " }
+                | 1 -> { c = "|  " }
+                | 2 -> { c = "|| " }
+                | 3 -> { c = "|||" }
+              ));
+        Ae ({ std_state with c = "]" }, None);
+      ], None)
+  in S.fix ~eq:state_eq (anim_def) (fun s -> 
+      let s' = S.map ~eq:state_eq (fun anim -> incr_anim anim ) s
+      in s', s'
+    )
+*)
 
 let eval_anim = anim >|~ eval ~cat:(^) ~get:(fun {c} -> c) 
 
-let print_anim = eval_anim >|~ Lwt_io.printf "%s\n"
+let print_anim = eval_anim >|~ (fun s -> Sys.command "tput cuu1" |> ignore; Lwt_io.printf "%s\n" s)
 
 let () = 
   let frame_n () =
