@@ -15,9 +15,30 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 *)
+
 open Batteries
 open BatExt_rand00
 open Gametypes
+
+(*>goto make func's for taking player input 
+  (+ parameter for coupling with visualizer?)*)
+
+(*goto : save term as module-state or return? -> should be given as arg to Visualizer*)
+let init () = 
+  let open Lwt in
+  Lwt_main.run (
+    let%lwt term = Lazy.force LTerm.stdout in
+    let%lwt mode = LTerm.enter_raw_mode term in
+    (return term) 
+      [%finally LTerm.leave_raw_mode term mode]
+  )
+
+(*goto implement*)
+let next_move : 
+  Board.t -> Player.mana -> (Gametypes.element -> float) -> Gametypes.element Lwt.t
+  = fun _ _ _ -> assert false
+    
+
 
 (* removing dependencies on camlp4 + pcre lib - will use Re for regexps instead?
 let match_symbol = function
