@@ -74,7 +74,7 @@ let eval_action board = function
          
   | At_home _ | At_opponent _ -> board
 
-let increment_time = List.fold_left (fun acc e -> 
+let increment_time board = List.fold_right (fun e acc -> 
     { e with 
       visual_state = {
         age = succ e.visual_state.age;
@@ -83,7 +83,7 @@ let increment_time = List.fold_left (fun acc e ->
           if is_app then is_app, succ since else v
       }
     } :: acc
-  ) []
+  ) board []
 
 (**not in use*)
 let rec zipswitch_a0 ?(append=[]) ?(remove_last=false) = function
