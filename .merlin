@@ -11,7 +11,7 @@ B _build/tests
 
 PKG re re.pcre
 PKG batteries 
-PKG lwt lwt.unix lwt.ppx
+PKG lwt lwt.unix lwt.ppx lwt.react
 PKG osc osc.lwt
 PKG lambda-term
 

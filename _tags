@@ -1,6 +1,6 @@
 true: thread
 true: package(batteries)
-true: package(lwt,lwt.unix,lwt.ppx)
+true: package(lwt,lwt.unix,lwt.ppx,lwt.react)
 true: package(osc,osc.lwt)
 true: package(re,re.pcre)
 true: package(lambda-term)
