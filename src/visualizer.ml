@@ -28,6 +28,7 @@ end
 
 module Term = struct
 
+  (*goto see notebook for changes/todo*)
   module Basic = struct 
 
     open Gstate
@@ -50,7 +51,7 @@ module Term = struct
 
     let suggest_len () = 
       let term_cols = Sys.term_ncolumns () in
-      let _ = Printf.printf "term # cols: %d\n" term_cols in
+      (*let _ = Printf.printf "term # cols: %d\n" term_cols in*)
       let rec iter_find len = 
         let nxt_len = columns_aux len in
         if nxt_len > term_cols then max (len-2) 4 else iter_find (len + 2)
@@ -156,6 +157,37 @@ module Term = struct
     end
 
   end
+
+  (*
+  module Fancy = struct
+
+    open Lwt_react
+
+    let term = Iinterp.init ()
+
+    let gstate, send_gstate = E.create ()
+
+    (*goto try remove type annot when having written more, and see if compile*)
+    let update: Gstate.t -> unit 
+      = send_gstate 
+
+    (*goto call this gameboard - map gameboard to list of signals (animations) 
+      > but where does the animations get their updates from? 
+        . where does the threads get startet
+        . where are new threads (signals?) started from?
+        . ! can old animation state get saved and mixed together with new animations?
+          > need recursive animation wrapping (recursive ADT interface?)
+          > can be used for _composing_ complex animations from simple ones
+      > have a look at S.sample -> sampling s at e, returns e' 
+    *)
+
+    let render_colorstr = E.map (fun gstate ->
+       (*<goo*)
+      ) gstate
+
+  end
+    *)
+
 
 end
 
