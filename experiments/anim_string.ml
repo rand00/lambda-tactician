@@ -3,8 +3,7 @@ open Batteries
 open Lwt
 open Lwt_react
 open LTerm_style 
-
-open Anim 
+open Anim.T
 
 let (>|~) e f = S.map f e 
 
@@ -47,7 +46,8 @@ let anim =
         Ae ({ std_state with s = "]" }, None);
       ], None
       ) |> Anim.incr_anim
-  in S.fold ~eq:Anim.state_eq (fun anim_acc _ -> Anim.incr_anim anim_acc) anim_def frames
+  in S.fold ~eq:(Anim.state_eq ~eq:(=)) 
+    (fun anim_acc _ -> Anim.incr_anim anim_acc) anim_def frames
 
 (*
 let anim = 
@@ -81,7 +81,7 @@ let eval_anim = LTerm_text.( Anim.(
   ))
 
 let print_anim = eval_anim >|~ (fun txt -> 
-    Sys.command "tput cuu1" |> ignore; 
+    Sys.command "tput cuu1" |> ignore; (*<goto use LTerm.move term rows cols*)
     LTerm.printls (LTerm_text.eval txt)
   )
 
