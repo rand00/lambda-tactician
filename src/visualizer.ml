@@ -158,35 +158,152 @@ module Term = struct
 
   end
 
-  (*
   module Fancy = struct
 
+    open Lwt
     open Lwt_react
 
-    let term = Iinterp.init ()
+    let term = Iinterp.Term.t
 
     let gstate, send_gstate = E.create ()
 
-    (*goto try remove type annot when having written more, and see if compile*)
-    let update: Gstate.t -> unit 
-      = send_gstate 
+    let frames, send_frame = E.create ()
+    (*let print_frame = S.map (Lwt_io.printf "%d\n") frames*)
+    let frames_s = S.hold 0 frames
 
-    (*goto call this gameboard - map gameboard to list of signals (animations) 
-      > but where does the animations get their updates from? 
-        . where does the threads get startet
-        . where are new threads (signals?) started from?
-        . ! can old animation state get saved and mixed together with new animations?
+    (*howto; map gameboard to set of signals (animations) 
+      > but where does the animations get their updates from? > a mapped 'update' over Gstate.t -> diff signals (of anims)
+           , later collected together in a full signal (of a gameboard anim collection)
+             > eval this to Lambdaterm printable type
+        . where does the frame thread get startet > after definition of graph 
+          ! test if framerate-thread also blocks rest of program... (should not be a Lwt_main.run.. but just an async ?)
+        . how are new animations initiated?
+          > are they just statically defined closures acting on board/gstate? 
+        . ! can old animation be running alongside new animations?
           > need recursive animation wrapping (recursive ADT interface?)
           > can be used for _composing_ complex animations from simple ones
-      > have a look at S.sample -> sampling s at e, returns e' 
     *)
 
+    let app_mode, send_app_mode = E.create ()
+
+    let first_update = ref true
+
+    let run_frames_on_first () =
+      let rec aux n = 
+        let () = send_frame n in
+        Lwt_unix.sleep 0.04 >> aux (if n = 1000 then 0 else succ n)
+      in 
+      if !first_update then (
+        Lwt.async (fun () -> (aux 0));
+        first_update := false; 
+      )
+
+    (**Input functions*)
+
+    let loading = 
+      run_frames_on_first ();
+      send_app_mode Gstate.(`Mode_loading)
+
+    (*goto try remove type annot when having written more, and see if compile*)
+    let update: Gstate.t -> unit = 
+      run_frames_on_first ();
+      send_app_mode Gstate.(`Mode_game);
+      send_gstate 
+
+    (**Game state*)
+
+    let (>|~) e f = S.map f e 
+
+    let columns = 
+      frames_s >|~ (fun frames -> frames mod 5) (*every 5th frame, update*)
+      >|~ (fun _ -> 
+          (LTerm.get_size term) >|= LTerm_geom.cols 
+          |> Lwt_main.run)
+
+    (* tip; to get string length of lterm eval'd; call 'Zed_utf8.length % LTerm_text.to_string'
+        on eval'd animations (it therefore depends on a switching signal, as eval
+        depends on game-mode) *)
+
+    let winner = Gstate.(
+        let winner = E.map (fun {winner} -> winner) gstate
+        in S.hold None winner
+      )
+
+    (**Player state*)
+
+    let p0_mana = Gstate.(
+        let mana = E.map (fun {p0} -> p0.mana) gstate
+        in S.hold 1. mana
+      )
+
+    let p1_mana = Gstate.(
+        let mana = E.map (fun {p1} -> p1.mana) gstate
+        in S.hold 1. mana
+      )
+
+    (**Animations*)
+
+    open Anim.T
+    open LTerm_style 
+
+    let lift_anim anim_def = S.fold (fun anim_acc _ -> 
+        Anim.incr_anim anim_acc) 
+        ~eq:(Anim.state_eq ~eq:(=))
+        anim_def
+        frames
+
+    type state = {
+      s : string;
+      c_fg : color;
+      c_bg : color
+      (*  prev : 'a option;*)
+    }
+
+    let std_state = {
+      s = ""; 
+      c_fg = default;
+      c_bg = default 
+    }
+
+
+    (*< goo*)
+    (*<goto make animation loading (composed of smaller ones?)*)
+
+    (*<goto make animation game-board 
+      > composed by:
+        . mana-bars
+        . name
+        . gameboard (how to map blocks to enduring animations? (id's rem in anim-state?))
+    *)
+
+
+    (**Game-mode switching*)
+    (*goto make func that maps over app_mode and returns an 'a signal signal 
+      (which is later switched over for evaluation) 
+      > this func should return the signals of the major composed animations to be eval'd*)
+      (*
+    let app_mode_s = S.map (function
+          `Mode_loading -> 
+          `Mode_game -> 
+    *)
+
+    (**Rendering*)
+
+    (*howto: 
+      . for fast rendering use 'LTerm.render_update' together with 'LTerm_draw.matrix / context'
+      . else just redraw (but better not to, as layered animations multiplies print-framerate for
+        each layer)
+    *)
+
+    (*
     let render_colorstr = E.map (fun gstate ->
        (*<goo*)
       ) gstate
+    *)
+    (*<goto cp eval and print funcs here from experiments/Anim_string*)
+
 
   end
-    *)
 
 
 end
