@@ -20,6 +20,11 @@ open BatExt_rand00
 open Gametypes
 open Player 
 
+type app_mode = [
+    `Mode_loading
+  | `Mode_game
+]
+
 type t = { (*goto where to put rules?*)
   p0 : Player.t;
   p1 : Player.t;
@@ -49,6 +54,7 @@ let player_position ~gstate = function
 
 let current_player_position ~gstate = 
   player_position ~gstate gstate.turn
+
 
 let opposite_direction = function
   | Left -> Right
