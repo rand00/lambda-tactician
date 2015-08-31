@@ -200,12 +200,13 @@ module Term = struct
 
     (**Input functions*)
 
-    let loading = 
+    (*goto look at lwt_react for e/s functions to use*)
+    let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading)
 
     (*goto try remove type annot when having written more, and see if compile*)
-    let update: Gstate.t -> unit = 
+    let update = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
       send_gstate 
@@ -214,22 +215,20 @@ module Term = struct
 
     let (>|~) e f = S.map f e 
 
+    let columns_get () = 
+      LTerm.get_size term >|= LTerm_geom.cols 
+      |> Lwt_main.run
+
     let columns = 
       frames_s >|~ (fun frames -> frames mod 5) (*every 5th frame, update*)
-      >|~ (fun _ -> 
-          (LTerm.get_size term) >|= LTerm_geom.cols 
-          |> Lwt_main.run)
+      >|~ (fun _ -> columns_get ()) 
 
     (* tip; to get string length of lterm eval'd; call 'Zed_utf8.length % LTerm_text.to_string'
         on eval'd animations (it therefore depends on a switching signal, as eval
         depends on game-mode) *)
 
-    let winner = Gstate.(
-        let winner = E.map (fun {winner} -> winner) gstate
-        in S.hold None winner
-      )
-
-    (**Player state*)
+    (*goto (later) make this depend on THIS modules visualization*)
+    let suggest_len = Basic.suggest_len
 
     let p0_mana = Gstate.(
         let mana = E.map (fun {p0} -> p0.mana) gstate
@@ -239,6 +238,11 @@ module Term = struct
     let p1_mana = Gstate.(
         let mana = E.map (fun {p1} -> p1.mana) gstate
         in S.hold 1. mana
+      )
+
+    let winner = Gstate.(
+        let winner = E.map (fun {winner} -> winner) gstate
+        in S.hold None winner
       )
 
     (**Animations*)
@@ -265,9 +269,34 @@ module Term = struct
       c_bg = default 
     }
 
-
-    (*< goo*)
-    (*<goto make animation loading (composed of smaller ones?)*)
+    let loading_anim = 
+      let cols = columns_get () 
+      and s0 = "Lambda"
+      and s1 = "Tactician" 
+      and space_between = 9 in
+      let outer_space str = 
+        ((float cols) /. 2.) -. ((float space_between) /. 2.) -.
+        (float (String.length str))
+        |> int_of_float in
+      let space_left = outer_space s0
+      and space_right = outer_space s1 in
+      let def = 
+        Al ([
+            Ae ({ std_state with s = (String.make space_left '-')}, None);
+            Ae ({ std_state with s = s0 }, None);
+            Ae ({ std_state with s = (String.make ((space_between-1)/2) '-')}, None);
+            Ae ({ std_state with s = "-" }, 
+                Some (
+                  fun st -> 
+                    ((match st.s with 
+                        | "-" -> "\\" | "\\" -> "|" | "|" -> "/" | "/" -> "-" )
+                     |> fun s -> { st with s })
+                ));
+            Ae ({ std_state with s = (String.make ((space_between-1)/2) '-')}, None);
+            Ae ({ std_state with s = s1 }, None);
+            Ae ({ std_state with s = (String.make space_right '-')}, None);
+          ], None)
+      in lift_anim def
 
     (*<goto make animation game-board 
       > composed by:
@@ -286,6 +315,8 @@ module Term = struct
           `Mode_loading -> 
           `Mode_game -> 
     *)
+
+    (*< goo (and then go rendering + eval (don't eval gstate anim yet)) *)
 
     (**Rendering*)
 
