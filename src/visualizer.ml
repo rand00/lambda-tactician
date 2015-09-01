@@ -158,7 +158,7 @@ module Term = struct
 
   end
 
-  module Fancy = struct
+  module Fancy : S = struct
 
     open Lwt
     open Lwt_react
@@ -203,13 +203,14 @@ module Term = struct
     (*goto look at lwt_react for e/s functions to use*)
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
-      send_app_mode Gstate.(`Mode_loading)
+      send_app_mode Gstate.(`Mode_loading);
+      wait_for >>= fun _ -> return ()
 
     (*goto try remove type annot when having written more, and see if compile*)
-    let update = 
+    let update gstate = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
-      send_gstate 
+      send_gstate gstate
 
     (**Game state*)
 
@@ -298,6 +299,17 @@ module Term = struct
           ], None)
       in lift_anim def
 
+
+    let game_anim = 
+      lift_anim (
+        Ae ({ std_state with s = ">> game is running" }, 
+            Some (fun st -> match S.value frames_s mod 4 with
+                | 0 -> { st with s = ">> game is running -" }
+                | 1 -> { st with s = ">> game is running --" }
+                | 2 -> { st with s = ">> game is running ---" } 
+                | 3 -> { st with s = ">> game is running ----" }
+                | _ -> { st with s = ">> game is running" }
+              )))
     (*<goto make animation game-board 
       > composed by:
         . mana-bars
@@ -307,16 +319,12 @@ module Term = struct
 
 
     (**Game-mode switching*)
-    (*goto make func that maps over app_mode and returns an 'a signal signal 
-      (which is later switched over for evaluation) 
-      > this func should return the signals of the major composed animations to be eval'd*)
-      (*
-    let app_mode_s = S.map (function
-          `Mode_loading -> 
-          `Mode_game -> 
-    *)
 
-    (*< goo (and then go rendering + eval (don't eval gstate anim yet)) *)
+    let visu_switcher = S.map (function
+          `Mode_loading -> loading_anim
+        | `Mode_game -> game_anim
+      ) (S.hold `Mode_loading app_mode)
+      |> S.switch
 
     (**Rendering*)
 
@@ -325,6 +333,21 @@ module Term = struct
       . else just redraw (but better not to, as layered animations multiplies print-framerate for
         each layer)
     *)
+
+
+    let visu_eval = LTerm_text.( Anim.( 
+        visu_switcher >|~ Anim.eval 
+          ~cat:(@) 
+          ~get:(fun {s; c_fg; c_bg} -> [B_fg c_fg; B_bg c_bg; S s; E_fg; E_bg] ) 
+      ))
+
+    let visu_print = visu_eval >|~ (fun txt -> 
+        (*Sys.command "tput cuu1" |> ignore;*) (*<goto use LTerm.move term rows cols*)
+        LTerm.move term (-1) 0 >>
+        LTerm.printls (LTerm_text.eval txt)
+      )
+    (*< goo  *)
+    (*goto make eval*)
 
     (*
     let render_colorstr = E.map (fun gstate ->
