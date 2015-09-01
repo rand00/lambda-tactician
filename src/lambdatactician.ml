@@ -25,7 +25,7 @@ open Player
 
 let run_game () =
   
-  let visualizer = (module Visualizer.Term.Basic.Oneline : Visualizer.S) in
+  let visualizer = (module Visualizer.Term.Fancy : Visualizer.S) in
   let module V = (val visualizer) in
 
   let gstate = {
