@@ -20,22 +20,18 @@ open Batteries
 open BatExt_rand00
 open Gametypes
 open Gstate
+open Lwt
 
 let rec gameturn gstate ~rules ~visualizer ~synth = 
 
   let module Rules = (val rules : Rules.S) in
-  (* > should contain two-way mailbox/signal comm (maybe both?)
-     . out-mb to send new game state 
-       (can be a signal_send function instead of mb: just keep "update func") 
-     . in-mb to check for visualizer anim done
-       (> is needed? .. maybe not yet just find a way to timeout signals so they stop
-       and are GC'ed)    *)
   let module Visualize = (val visualizer : Visualizer.S) 
   in
+  (*>goto make this a lwt chain of data*)
   Gstate.next_player_element ~gstate (Rules.return_cost ~gstate)
-  |> Rules.apply_cost_to_element ~gstate
-  |> Rules.is_element_legal ~gstate
-  |> function
+  >>= Rules.apply_cost_to_element ~gstate
+  >>= Rules.is_element_legal ~gstate
+  >>= function
   | `Legal element -> 
 
     begin 
@@ -86,8 +82,8 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
         |> Board.increment_time 
       (*<goto just wrap in lwt.return? (or use lwt_list inside)*)
 
-      in { gstate with turn = (Player.opposite gstate.turn); board }
-      (*<goto just wrap in lwt.return*)
+      in Lwt.return 
+        { gstate with turn = (Player.opposite gstate.turn); board }
 
     end
 
@@ -98,39 +94,38 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
       let _ = SC.Synth.synth synth "ratata" 
           [ (match gstate.turn with 
                 | P0 -> ("panfrom", `I (-1)) 
-                | P1 | PNone -> "panfrom", `I 1) ] in
-
+                | P1 | PNone -> "panfrom", `I 1) ] 
+      in
       Rules.apply_punishment illegal_elem ~gstate
       |> Rules.set_possible_winner
       |> function
       | { winner = Some _ } as gstate -> 
-        (*> goto from here Lwt*)
-        let _ = Visualize.update gstate 
-        in gstate
+        Visualize.update gstate 
+        >> return gstate
       | gstate -> 
-        (*> goto from here Lwt*)
-        let _ = Visualize.update gstate 
-        in gameturn gstate ~rules ~visualizer ~synth (*..same players turn*)
+        Visualize.update gstate 
+        >> gameturn gstate ~rules ~visualizer ~synth (*..same players turn*)
 
     end
 
 
-(* ~iinterp ; fcmod*)
+(* ~iinterp : fc module*)
 let gloop gstate_init ~rules ~visualizer ~synth = 
   let open Player in
   let module Visualize = (val visualizer : Visualizer.S) in
-  let _ = SC.Synth.synth synth "synth_ghost2" [] in
-  (*>goto use Lwt from here*)
-  let _ = print_endline "" in
-  let _ = Visualize.update gstate_init
+  let _ = SC.Synth.synth synth "synth_ghost2" [] in (*Lwt async call*)
+  let%lwt () = Lwt_io.printl "" in
+  let%lwt () = Visualize.update gstate_init
   in
   let rec loop_if_no_winner = function
     | { winner = Some player; p0; p1 } -> 
       (match player with 
-       | P0 -> print_endline ("And the winner is "^p0.name^"!")
-       | P1 -> print_endline ("And the winner is "^p1.name^"!")
-       | PNone -> failwith "Control: Ehm.. something wen't wrong - PNone is no player.")
-    | gstate -> loop_if_no_winner (gameturn gstate ~rules ~visualizer ~synth)
+       | P0 -> Lwt_io.printl ("And the winner is "^p0.name^"!")
+       | P1 -> Lwt_io.printl ("And the winner is "^p1.name^"!")
+       | PNone -> Lwt.fail_with "Control: Ehm.. something wen't wrong - PNone is no player.")
+    | gstate -> 
+      gameturn gstate ~rules ~visualizer ~synth
+      >>= loop_if_no_winner 
   in 
   loop_if_no_winner gstate_init
 

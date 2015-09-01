@@ -40,12 +40,12 @@ module type S = sig
   val return_cost : 
     gstate:Gstate.t -> Gametypes.element -> float
   val apply_cost_to_element : 
-    gstate:Gstate.t -> Gametypes.element_wrap -> Gametypes.element_wrap
+    gstate:Gstate.t -> Gametypes.element_wrap -> Gametypes.element_wrap Lwt.t
   val is_element_legal :
     gstate:Gstate.t ->
     Gametypes.element_wrap ->
     [ `Illegal of Gametypes.element_wrap 
-    | `Legal of Gametypes.element_wrap ]
+    | `Legal of Gametypes.element_wrap ] Lwt.t
   val update_player_mana :
     gstate:Gstate.t ->
     [ `From_actions of Gametypes.element_action list
@@ -74,7 +74,7 @@ module BasicSubs = struct
 
 
     let apply_cost_to_element ~gstate e = 
-      { e with mana_cost = return_cost ~gstate e.element } 
+      Lwt.return { e with mana_cost = return_cost ~gstate e.element } 
 
   end
 
@@ -82,8 +82,8 @@ module BasicSubs = struct
 
     let is_element_legal ~gstate elem = 
       if elem.mana_cost <= (Gstate.current_player_mana ~gstate) 
-      then `Legal elem
-      else `Illegal elem
+      then Lwt.return (`Legal elem)
+      else Lwt.return (`Illegal elem)
 
   end
 

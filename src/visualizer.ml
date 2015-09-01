@@ -22,7 +22,7 @@ open Gametypes
 
 module type S = sig 
   val suggest_len : unit -> int
-  val update : Gstate.t -> unit
+  val update : Gstate.t -> unit Lwt.t
   val loading : gstate:Gstate.t -> wait_for:'a Lwt.t -> unit Lwt.t 
 end
 
@@ -210,7 +210,7 @@ module Term = struct
     let update gstate = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
-      send_gstate gstate
+      Lwt.wrap1 send_gstate gstate
 
     (**Game state*)
 

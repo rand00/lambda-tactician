@@ -64,26 +64,26 @@ let next_player_element ~gstate return_cost =
   let open Lwt in
   match gstate.turn with 
   | P0 -> 
-    let next_elem = Lwt_main.run
-        (gstate.p0.next_move
-           gstate.board 
-           gstate.p0.mana
-           return_cost)
-    in { (empty_wrap_init ()) with
-         owner = P0;
-         element = next_elem;
-       }
+    let%lwt next_elem = 
+      (gstate.p0.next_move
+         gstate.board 
+         gstate.p0.mana
+         return_cost)
+    in return { (empty_wrap_init ()) with
+                owner = P0;
+                element = next_elem;
+              }
   | P1 -> 
-    let next_elem = Lwt_main.run
-        (gstate.p1.next_move
-           gstate.board 
-           gstate.p1.mana
-           return_cost)
-    in { (empty_wrap_init ()) with
-         owner = P1;
-         element = next_elem;
-       }
-  | PNone -> failwith "Gstate: PNone is no player"
+    let%lwt next_elem = 
+      (gstate.p1.next_move
+         gstate.board 
+         gstate.p1.mana
+         return_cost)
+    in return { (empty_wrap_init ()) with
+                owner = P1;
+                element = next_elem;
+              }
+  | PNone -> Lwt.fail_with "Gstate: PNone is no player"
 
 let add_player_mana ~gstate pid diff = 
   match pid with 

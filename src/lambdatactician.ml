@@ -18,10 +18,11 @@
 
 open Batteries
 open BatExt_rand00
+open Lwt
+
 open Gametypes
 open Gstate
 open Player
-
 
 let run_game () =
   
@@ -49,13 +50,13 @@ let run_game () =
          };
   } 
   in
-  let synth = Synth.run_with_loadscreen ~gstate visualizer
-  (*< goto expose inner Lwt monad (Lwt_main.run blocks rest of app)*)
-  in Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
-  (*< goto this loop is not inside the Lwt-monad (need be)*)
+  let%lwt synth = Synth.run_with_loadscreen ~gstate ~visualizer
+  in Control.gloop gstate 
+    ~rules:(module Rules.Basic) 
+    ~visualizer 
+    ~synth
 
-
-let _ = run_game ()
+let _ = Lwt_main.run (run_game ())
 
 
     
