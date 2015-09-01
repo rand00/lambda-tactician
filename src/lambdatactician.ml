@@ -50,7 +50,9 @@ let run_game () =
   } 
   in
   let synth = Synth.run_with_loadscreen ~gstate visualizer
+  (*< goto expose inner Lwt monad (Lwt_main.run blocks rest of app)*)
   in Control.gloop gstate ~rules:(module Rules.Basic) ~visualizer ~synth
+  (*< goto this loop is not inside the Lwt-monad (need be)*)
 
 
 let _ = run_game ()
