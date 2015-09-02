@@ -114,7 +114,6 @@ let gloop gstate_init ~rules ~visualizer ~synth =
   let open Player in
   let module Visualize = (val visualizer : Visualizer.S) in
   let _ = SC.Synth.synth synth "synth_ghost2" [] in (*Lwt async call*)
-  let%lwt () = Lwt_io.printl "" in
   let%lwt () = Visualize.update gstate_init
   in
   let rec loop_if_no_winner = function
