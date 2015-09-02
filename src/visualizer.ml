@@ -168,8 +168,12 @@ module Term = struct
     let gstate, send_gstate = E.create ()
 
     let frames, send_frame = E.create ()
-    (*let print_frame = S.map (Lwt_io.printf "%d\n") frames*)
     let frames_s = S.hold 0 frames
+  (*
+    let print_frame = 
+      let s = S.map (Lwt_io.printf "frame: %d\n\n") frames_s in
+      let _ = S.keep s in s
+   *)
 
     (*howto; map gameboard to set of signals (animations) 
       > but where does the animations get their updates from? > a mapped 'update' over Gstate.t -> diff signals (of anims)
@@ -191,7 +195,9 @@ module Term = struct
     let run_frames_on_first () =
       let rec aux n = 
         let () = send_frame n in
-        Lwt_unix.sleep 0.04 >> aux (if n = 1000 then 0 else succ n)
+        Lwt_unix.sleep 0.04 
+        (*>> Lwt_io.printf "\nframe from thread: %d \t first update: %b\n\n" n !first_update*)
+        >> aux (if n = 1000 then 0 else succ n)
       in 
       if !first_update then (
         Lwt.async (fun () -> (aux 0));
@@ -200,11 +206,10 @@ module Term = struct
 
     (**Input functions*)
 
-    (*goto look at lwt_react for e/s functions to use*)
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> return ()
+      wait_for >>= fun _ -> Lwt_unix.sleep 3.
 
     (*goto try remove type annot when having written more, and see if compile*)
     let update gstate = 
@@ -216,13 +221,18 @@ module Term = struct
 
     let (>|~) e f = S.map f e 
 
-    let columns_get () = 
-      LTerm.get_size term >|= LTerm_geom.cols 
-      |> Lwt_main.run
+    let columns_get () = LTerm.get_size term >|= LTerm_geom.cols 
 
     let columns = 
-      frames_s >|~ (fun frames -> frames mod 5) (*every 5th frame, update*)
-      >|~ (fun _ -> columns_get ()) 
+      E.filter (fun frames -> frames mod 5 = 0) (*every n'th frame, update*)
+        frames
+      |> E.map_s (fun _ -> columns_get ()) 
+      |> S.hold (Lwt_main.run (columns_get())) (*run is only run once (and returns quickly)*)
+
+(*
+    let print_columns = S.map (Lwt_io.printf "columns: %d\n\n") columns 
+    let _ = S.keep print_columns
+*)
 
     (* tip; to get string length of lterm eval'd; call 'Zed_utf8.length % LTerm_text.to_string'
         on eval'd animations (it therefore depends on a switching signal, as eval
@@ -231,20 +241,20 @@ module Term = struct
     (*goto (later) make this depend on THIS modules visualization*)
     let suggest_len = Basic.suggest_len
 
-    let p0_mana = Gstate.(
+    let p0_mana = Gstate.( Player.(
         let mana = E.map (fun {p0} -> p0.mana) gstate
         in S.hold 1. mana
-      )
+      ))
 
-    let p1_mana = Gstate.(
+    let p1_mana = Gstate.( Player.(
         let mana = E.map (fun {p1} -> p1.mana) gstate
         in S.hold 1. mana
-      )
+      ))
 
-    let winner = Gstate.(
+    let winner = Gstate.( Player.(
         let winner = E.map (fun {winner} -> winner) gstate
         in S.hold None winner
-      )
+      ))
 
     (**Animations*)
 
@@ -271,8 +281,8 @@ module Term = struct
     }
 
     let loading_anim = 
-      let cols = columns_get () 
-      and s0 = "Lambda"
+      let cols = S.value columns in
+      let s0 = "Lambda"
       and s1 = "Tactician" 
       and space_between = 9 in
       let outer_space str = 
@@ -303,13 +313,14 @@ module Term = struct
     let game_anim = 
       lift_anim (
         Ae ({ std_state with s = ">> game is running" }, 
-            Some (fun st -> match S.value frames_s mod 4 with
+            Some (fun st -> match (S.value frames_s / 4) mod 4 with
                 | 0 -> { st with s = ">> game is running -" }
                 | 1 -> { st with s = ">> game is running --" }
                 | 2 -> { st with s = ">> game is running ---" } 
                 | 3 -> { st with s = ">> game is running ----" }
                 | _ -> { st with s = ">> game is running" }
               )))
+
     (*<goto make animation game-board 
       > composed by:
         . mana-bars
@@ -334,7 +345,6 @@ module Term = struct
         each layer)
     *)
 
-
     let visu_eval = LTerm_text.( Anim.( 
         visu_switcher >|~ Anim.eval 
           ~cat:(@) 
@@ -342,20 +352,12 @@ module Term = struct
       ))
 
     let visu_print = visu_eval >|~ (fun txt -> 
-        (*Sys.command "tput cuu1" |> ignore;*) (*<goto use LTerm.move term rows cols*)
-        LTerm.move term (-1) 0 >>
-        LTerm.printls (LTerm_text.eval txt)
+        LTerm.clear_line term >>
+        LTerm.printls (LTerm_text.eval txt) >>
+        LTerm.move term (-1) 0 
       )
-    (*< goo  *)
-    (*goto make eval*)
 
-    (*
-    let render_colorstr = E.map (fun gstate ->
-       (*<goo*)
-      ) gstate
-    *)
-    (*<goto cp eval and print funcs here from experiments/Anim_string*)
-
+    let _ = S.keep visu_print
 
   end
 

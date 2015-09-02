@@ -53,7 +53,7 @@ let run_game () =
   let%lwt synth = Synth.run_with_loadscreen ~gstate ~visualizer
   in Control.gloop gstate 
     ~rules:(module Rules.Basic) 
-    ~visualizer 
+    ~visualizer
     ~synth
 
 let _ = Lwt_main.run (run_game ())
