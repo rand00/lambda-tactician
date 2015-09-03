@@ -49,4 +49,42 @@ let test2 () =
   Lwt_unix.sleep 1. >>
   LTerm.render_update term n' m' 
 
-let _  = Lwt_main.run (test2 ())
+
+(*testing rendering contexts*)
+let test3 () = 
+  let open LTerm_geom in 
+  let d = {rows=1; cols=300} in
+  let m = LTerm_draw.make_matrix d in
+  let c = LTerm_draw.context m d in
+  let t = Iinterp.Term.t in
+  for i=0 to 50 do
+    let _ = LTerm_draw.clear c in
+    let _ = LTerm_draw.draw_styled c 0 i 
+        LTerm_text.( LTerm_style.(
+            eval [B_fg (index i); S "woow"; E_fg ]
+          )) in
+    Lwt_main.run (
+      LTerm.render t m
+      >> Lwt_unix.sleep 1.)
+  done
+
+
+(*testing rendering 'outside' context*)
+let test4 () = 
+  let open LTerm_geom in 
+  let d = {rows=1; cols=300} in
+  let m = LTerm_draw.make_matrix d in
+  let c = LTerm_draw.context m d in
+  let t = Iinterp.Term.t in
+  for i=6 downto -20 do
+    let _ = LTerm_draw.clear c in
+    let _ = LTerm_draw.draw_styled c 0 i 
+        LTerm_text.( LTerm_style.(
+            eval [B_fg (index (abs i)); S "woow"; E_fg ]
+          )) in
+    Lwt_main.run (
+      LTerm.render t m
+      >> Lwt_unix.sleep 1.)
+  done
+
+let _  = test4 ()
