@@ -235,10 +235,6 @@ module Term = struct
     let _ = S.keep print_columns
 *)
 
-    (* tip; to get string length of lterm eval'd; call 'Zed_utf8.length % LTerm_text.to_string'
-        on eval'd animations (it therefore depends on a switching signal, as eval
-        depends on game-mode) *)
-
     (*goto (later) make this depend on THIS modules visualization*)
     let suggest_len = Basic.suggest_len
 
@@ -324,12 +320,19 @@ module Term = struct
                 | _ -> { st with s = ">> game is running" }
               ))
       ]
-
     (*<goto make animation game-board 
       > composed by:
         . mana-bars
         . name
         . gameboard (how to map blocks to enduring animations? (id's rem in anim-state?))
+    *)
+    (*< goto think about how 'switching' animations are supposed to be put inside a layer,
+        when layers are lower code; are the switch just a closure that evaluates to something?
+        ... but closures just map over state - not animation tree; so we cannot extend 
+            animation tree on the fly with this method
+            > maybe go in direction where we have a message-animation signal that can switch
+              over animations and insert node in animation tree (S.value / mapping over 
+              higher code?)
     *)
 
 
@@ -345,39 +348,19 @@ module Term = struct
 
     (**Rendering*)
 
-    (*howto: 
-      . for fast rendering use 'LTerm.render_update' together with 'LTerm_draw.matrix / context'
-      . else just redraw (but better not to, as layered animations multiplies print-framerate for
-        each layer)
-    *)
-
-    type layer_rendering = {
+    type render_elem = {
       indent : int;
       content : LTerm_text.markup;
     }
 
-    (*goto Anim.eval should be done more efficiently with some kind of fold instead*)
+    (*gomaybe Anim.eval should be done more efficiently with some kind of fold instead*)
     let anim_layers = LTerm_text.( 
         visu_switcher >|~ (fun l -> 
             Anim.eval l
               ~cat:(@) 
-              ~get:(fun {s; c_fg; c_bg; i} -> [{
-                  indent = i; 
-                  content = [B_fg c_fg; B_bg c_bg; S s; E_fg; E_bg];
-                }]
-                )
-            |> List.flatten
+              ~get:(fun st -> [st])
           )
       )
-
-
-(*
-    let visu_print = visu_eval >|~ (fun txt -> 
-        LTerm.clear_line term >>
-        LTerm.printls (LTerm_text.eval txt) >>
-        LTerm.move term (-1) 0 
-      )
-*)
 
     let visu_width = visu_switcher >|~ fun layers -> 
       Anim.eval layers
@@ -399,16 +382,26 @@ module Term = struct
         LTerm_draw.context matrix dim
       ) render_width draw_matrix
 
-    (*goo>*)
+
     let visualize = 
       S.l3 (fun layers context matrix -> 
           LTerm_draw.clear context;
-          List.iter (fun {indent; content} ->
-              LTerm_text.eval content
-              |> LTerm_draw.draw_styled context 1 indent
+          List.iter (fun layer -> 
+              List.fold_right (fun {s; i} pos_acc ->
+                  let open LTerm_text in
+                  let styled = List.map (fun {s; i; c_fg; c_bg} -> 
+                      [B_fg c_fg; B_bg c_bg; S s; E_bg; E_fg]
+                    ) layer |> List.concat
+                  in
+                  LTerm_text.eval styled
+                  |> LTerm_draw.draw_styled context 0 i;
+                  (pos_acc + i + (Zed_utf8.length s))
+                ) layer 0; 
+              ()
             ) layers;
           LTerm.render term matrix
         ) anim_layers draw_context draw_matrix
+
 
     let _ = S.keep visualize
 
