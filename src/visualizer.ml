@@ -220,6 +220,7 @@ module Term = struct
     (**Game state*)
 
     let (>|~) e f = S.map f e 
+    let (>>~) f e = S.bind f e 
 
     let columns_get () = LTerm.get_size term >|= LTerm_geom.cols 
 
@@ -269,6 +270,7 @@ module Term = struct
 
     type state = {
       s : string;
+      i : int; (*indent from left*)
       c_fg : color;
       c_bg : color
       (*  prev : 'a option;*)
@@ -276,6 +278,7 @@ module Term = struct
 
     let std_state = {
       s = ""; 
+      i = 0;
       c_fg = default;
       c_bg = default 
     }
@@ -331,11 +334,13 @@ module Term = struct
 
     (**Game-mode switching*)
 
-    let visu_switcher = S.map (function
-          `Mode_loading -> loading_anim
-        | `Mode_game -> game_anim
-      ) (S.hold `Mode_loading app_mode)
-      |> S.switch
+    let visu_switcher = 
+      let app_mode_s = (S.hold `Mode_loading app_mode) in
+      S.map (function
+            `Mode_loading -> loading_anim
+          | `Mode_game -> game_anim
+        ) app_mode_s
+      |> S.switch 
 
     (**Rendering*)
 
@@ -345,19 +350,54 @@ module Term = struct
         each layer)
     *)
 
-    let visu_eval = LTerm_text.( Anim.( 
+    type layer_rendering = {
+      indent : int;
+      content : LTerm_text.markup;
+    }
+
+    let anim_layers = LTerm_text.( 
         visu_switcher >|~ Anim.eval 
           ~cat:(@) 
-          ~get:(fun {s; c_fg; c_bg} -> [B_fg c_fg; B_bg c_bg; S s; E_fg; E_bg] ) 
-      ))
-
+          ~get:(fun {s; c_fg; c_bg; i} -> [{
+              indent = i; 
+              content = [B_fg c_fg; B_bg c_bg; S s; E_fg; E_bg];
+            }]
+            ) 
+      )
+(*
     let visu_print = visu_eval >|~ (fun txt -> 
         LTerm.clear_line term >>
         LTerm.printls (LTerm_text.eval txt) >>
         LTerm.move term (-1) 0 
       )
+*)
 
-    let _ = S.keep visu_print
+    let visu_width = visu_switcher >|~ Anim.eval
+        ~cat:(+)
+        ~get:(fun {s; i} -> i + (Zed_utf8.length s))
+
+    let draw_matrix = visu_width >|~ (fun width -> 
+        let dim = LTerm_geom.({rows=1; cols=width}) in
+        LTerm_draw.make_matrix dim
+      ) 
+
+    let draw_context = S.l2 (fun width matrix-> 
+        let dim = LTerm_geom.({rows=1; cols=width}) in
+        LTerm_draw.context matrix dim
+      ) visu_width draw_matrix
+
+    (*goo>*)
+    let visualize = 
+      S.l3 (fun layers context matrix -> 
+          LTerm_draw.clear context;
+          List.iter (fun {indent; content} ->
+              LTerm_text.eval content
+              |> LTerm_draw.draw_styled context 1 indent
+            ) layers;
+          LTerm.render term matrix
+        ) anim_layers draw_context draw_matrix
+
+    let _ = S.keep visualize
 
   end
 
