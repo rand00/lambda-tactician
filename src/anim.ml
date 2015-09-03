@@ -17,7 +17,8 @@ open T
 
 (**Evaluation*)
 
-let state_eq ~eq s s' = 
+(*For one-layer animations*)
+let layer_eq ~eq s s' = 
   let rec aux s s' = 
     match s, s' with
     | Al (le, _), Al (le', _) -> begin
@@ -30,15 +31,22 @@ let state_eq ~eq s s' =
     | _ -> false
   in aux s s'
 
+(*For layered animations*)
+let equal ~eq l l' = List.fold_right2 (fun e e' acc_eq -> 
+    acc_eq && layer_eq ~eq e e'
+  ) l l' true
+
 let map_rules e = function 
   | Some r -> r e
   | None -> e
 
-let rec incr_anim = function
+let rec incr_layer = function
   | Ae (e, rules) -> Ae (map_rules e rules, rules)
-  | Al (el, rules) -> Al (map_rules (List.map incr_anim el) rules, rules)
+  | Al (el, rules) -> Al (map_rules (List.map incr_layer el) rules, rules)
 
-let eval ~cat ~get = 
+let incr_anim l = List.map incr_layer l
+
+let eval_layer ~cat ~get = 
   let rec aux = function
     | Ae (e, _) -> get e
     | Al (e::el, _) -> List.fold_left (fun acc e -> 
@@ -47,6 +55,6 @@ let eval ~cat ~get =
     | Al ([], _) -> failwith "Empty animation!"
   in aux 
 
-
+let eval ~cat ~get = List.map (eval_layer ~cat ~get)
 
 
