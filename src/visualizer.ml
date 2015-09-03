@@ -262,9 +262,9 @@ module Term = struct
     open Anim.T
     open LTerm_style 
 
-    let lift_anim anim_def = S.fold (fun anim_acc _ -> 
-        Anim.incr_anim anim_acc) 
-        ~eq:(Anim.state_eq ~eq:(=))
+    let lift_anim anim_def = S.fold 
+        (fun anim_acc _ -> Anim.incr_anim anim_acc) 
+        ~eq:(Anim.equal ~eq:(=))
         anim_def
         frames
 
@@ -310,11 +310,11 @@ module Term = struct
             Ae ({ std_state with s = s1 }, None);
             Ae ({ std_state with s = (String.make space_right '-')}, None);
           ], None)
-      in lift_anim def
+      in lift_anim [def]
 
 
     let game_anim = 
-      lift_anim (
+      lift_anim [
         Ae ({ std_state with s = ">> game is running" }, 
             Some (fun st -> match (S.value frames_s / 4) mod 4 with
                 | 0 -> { st with s = ">> game is running -" }
@@ -322,7 +322,8 @@ module Term = struct
                 | 2 -> { st with s = ">> game is running ---" } 
                 | 3 -> { st with s = ">> game is running ----" }
                 | _ -> { st with s = ">> game is running" }
-              )))
+              ))
+      ]
 
     (*<goto make animation game-board 
       > composed by:
@@ -355,15 +356,21 @@ module Term = struct
       content : LTerm_text.markup;
     }
 
+    (*goto Anim.eval should be done more efficiently with some kind of fold instead*)
     let anim_layers = LTerm_text.( 
-        visu_switcher >|~ Anim.eval 
-          ~cat:(@) 
-          ~get:(fun {s; c_fg; c_bg; i} -> [{
-              indent = i; 
-              content = [B_fg c_fg; B_bg c_bg; S s; E_fg; E_bg];
-            }]
-            ) 
+        visu_switcher >|~ (fun l -> 
+            Anim.eval l
+              ~cat:(@) 
+              ~get:(fun {s; c_fg; c_bg; i} -> [{
+                  indent = i; 
+                  content = [B_fg c_fg; B_bg c_bg; S s; E_fg; E_bg];
+                }]
+                )
+            |> List.flatten
+          )
       )
+
+
 (*
     let visu_print = visu_eval >|~ (fun txt -> 
         LTerm.clear_line term >>
@@ -372,19 +379,25 @@ module Term = struct
       )
 *)
 
-    let visu_width = visu_switcher >|~ Anim.eval
+    let visu_width = visu_switcher >|~ fun layers -> 
+      Anim.eval layers
         ~cat:(+)
         ~get:(fun {s; i} -> i + (Zed_utf8.length s))
+      |> fun lengths -> List.fold_right max lengths 0
 
-    let draw_matrix = visu_width >|~ (fun width -> 
-        let dim = LTerm_geom.({rows=1; cols=width}) in
-        LTerm_draw.make_matrix dim
+    let render_width = S.l2 (fun visu_width columns -> 
+        max visu_width columns
+      ) visu_width columns
+
+    let draw_matrix = render_width >|~ (fun render_width -> 
+        LTerm_geom.( 
+          LTerm_draw.make_matrix {rows=1; cols=(render_width)} )
       ) 
 
-    let draw_context = S.l2 (fun width matrix-> 
-        let dim = LTerm_geom.({rows=1; cols=width}) in
+    let draw_context = S.l2 (fun render_width matrix-> 
+        let dim = LTerm_geom.({rows=1; cols=render_width}) in
         LTerm_draw.context matrix dim
-      ) visu_width draw_matrix
+      ) render_width draw_matrix
 
     (*goo>*)
     let visualize = 
