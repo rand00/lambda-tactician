@@ -311,13 +311,11 @@ module Term = struct
         (float (String.length str))
         |> int_of_float in
       let def_bg = Ae (
-          { std_st with 
-            s = String.make cols '-'; c_fg = c_i 3
-          }, None) 
-      and def_title = 
-        Al ([ Ae ({ std_st with s = s0; c_fg = c_i 3; i = outer_space s0 }, None);
-              Ae ({ std_st with s = s1; c_fg = c_i 3; i = space_between }, None);
-            ], None) 
+          { std_st with s = String.make cols '-'; c_fg = c_i 3 }, None) 
+      and def_title = Al ([ 
+          Ae ({ std_st with s = s0; c_fg = c_i 3; i = outer_space s0 }, None);
+          Ae ({ std_st with s = s1; c_fg = c_i 3; i = space_between }, None);
+        ], None) 
       and def_curtain0 = 
         let len = 30 
         and indent = 3 in
@@ -327,10 +325,13 @@ module Term = struct
                   c_fg = c_i 8; 
                   i = indent
                 }, None )) |> Al.indent_head (cols - (len*(indent +1))), 
+            (*<goto this case of math shows that I might want a rendering wrapper
+               that supports 'overdraw' to the right (left is fine)
+            *)
             Some (Al.indent_head (-1)))
       in lift_anim [def_bg; def_title; def_curtain0]
 
-(* weird effect :o some render artifact?
+(* weird effect :o some render artifact? (yes from overdraw right)
       let def_curtain0 = 
         Al (List.init 8 (fun iter -> 
             Ae ({ std_st with 
@@ -340,7 +341,6 @@ module Term = struct
                 Some move_left)), 
             None)
 *)
-
 
     let game_anim = 
       lift_anim [
