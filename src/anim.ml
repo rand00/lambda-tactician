@@ -8,8 +8,8 @@ module T = struct
 
   (*The 'a type parameter is for saving state about the animation-elements (Ae's)*)
   type 'a anim = 
-    | Al of 'a anim list * 'a anim list rules option
-    | Ae of 'a * 'a rules option
+    | Al of ('a anim list * 'a anim list rules option)
+    | Ae of ('a * 'a rules option)
 
 end
 
