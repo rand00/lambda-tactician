@@ -211,7 +211,6 @@ module Term = struct
       send_app_mode Gstate.(`Mode_loading);
       wait_for >>= fun _ -> Lwt_unix.sleep 3.
 
-    (*goto try remove type annot when having written more, and see if compile*)
     let update gstate = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
@@ -258,6 +257,8 @@ module Term = struct
     open Anim.T
     open LTerm_style 
 
+    (*goto find out if I want to lift ALL layers at the same time, or collect them later
+      after they've become signals... *)
     let lift_anim anim_def = S.fold 
         (fun anim_acc _ -> Anim.incr_anim anim_acc) 
         ~eq:(Anim.equal ~eq:(=))
@@ -272,46 +273,78 @@ module Term = struct
       (*  prev : 'a option;*)
     }
 
-    let std_state = {
+    let std_st = {
       s = ""; 
       i = 0;
       c_fg = default;
       c_bg = default 
     }
 
+    let c_i = LTerm_style.index
+
+    (*goto make more helper funcs + move these modules somewhere else?*)
+
+    module Ae = struct 
+      let indent_incr inc each ({i} as st) = {
+        st with i=(if S.value frames_s mod each = 0 then i + inc else i)
+      } 
+    end
+
+    module Al = struct 
+      let indent_head plus = function
+        | [] -> [] 
+        | (Ae ({i} as st, f))::tl -> 
+          (Ae ({st with i = i + plus}, f))::tl 
+    end
+
+    (*goto change loading(/splash) animation to one with layers
+        1. movement static "lambda tactician" in bg + color swoosh over?
+        2. ++ layerS with "/"or"\\" flying by in different colors; purple,redish,blueish
+    *)
+    (*>goo*)
     let loading_anim = 
-      let cols = S.value columns in
-      let s0 = "Lambda"
-      and s1 = "Tactician" 
+      let s0, s1 = "Lambda", "Tactician" 
+      and cols = S.value columns 
       and space_between = 9 in
       let outer_space str = 
         ((float cols) /. 2.) -. ((float space_between) /. 2.) -.
         (float (String.length str))
         |> int_of_float in
-      let space_left = outer_space s0
-      and space_right = outer_space s1 in
-      let def = 
-        Al ([
-            Ae ({ std_state with s = (String.make space_left '-')}, None);
-            Ae ({ std_state with s = s0 }, None);
-            Ae ({ std_state with s = (String.make ((space_between-1)/2) '-')}, None);
-            Ae ({ std_state with s = "-" }, 
-                Some (
-                  fun st -> 
-                    ((match st.s with 
-                        | "-" -> "\\" | "\\" -> "|" | "|" -> "/" | "/" -> "-" )
-                     |> fun s -> { st with s })
-                ));
-            Ae ({ std_state with s = (String.make ((space_between-1)/2) '-')}, None);
-            Ae ({ std_state with s = s1 }, None);
-            Ae ({ std_state with s = (String.make space_right '-')}, None);
-          ], None)
-      in lift_anim [def]
+      let def_bg = Ae (
+          { std_st with 
+            s = String.make cols '-'; c_fg = c_i 3
+          }, None) 
+      and def_title = 
+        Al ([ Ae ({ std_st with s = s0; c_fg = c_i 3; i = outer_space s0 }, None);
+              Ae ({ std_st with s = s1; c_fg = c_i 3; i = space_between }, None);
+            ], None) 
+      and def_curtain0 = 
+        let len = 30 
+        and indent = 3 in
+        Al (List.init len (fun iter -> 
+            Ae ({ std_st with 
+                  s = "\\"; 
+                  c_fg = c_i 8; 
+                  i = indent
+                }, None )) |> Al.indent_head (cols - (len*(indent +1))), 
+            Some (Al.indent_head (-1)))
+      in lift_anim [def_bg; def_title; def_curtain0]
+
+(* weird effect :o some render artifact?
+      let def_curtain0 = 
+        Al (List.init 8 (fun iter -> 
+            Ae ({ std_st with 
+                  s = "\\"; 
+                  c_fg = c_i 6; 
+                  i = cols-(iter*2) }, 
+                Some move_left)), 
+            None)
+*)
 
 
     let game_anim = 
       lift_anim [
-        Ae ({ std_state with s = ">> game is running" }, 
+        Ae ({ std_st with s = ">> game is running" }, 
             Some (fun st -> match (S.value frames_s / 4) mod 4 with
                 | 0 -> { st with s = ">> game is running -" }
                 | 1 -> { st with s = ">> game is running --" }
@@ -387,16 +420,14 @@ module Term = struct
       S.l3 (fun layers context matrix -> 
           LTerm_draw.clear context;
           List.iter (fun layer -> 
-              List.fold_right (fun {s; i} pos_acc ->
+              List.fold_left (fun pos_acc {s; i; c_fg; c_bg} ->
                   let open LTerm_text in
-                  let styled = List.map (fun {s; i; c_fg; c_bg} -> 
-                      [B_fg c_fg; B_bg c_bg; S s; E_bg; E_fg]
-                    ) layer |> List.concat
+                  let styled = [B_fg c_fg; B_bg c_bg; S s; E_bg; E_fg]
                   in
                   LTerm_text.eval styled
-                  |> LTerm_draw.draw_styled context 0 i;
+                  |> LTerm_draw.draw_styled context 0 (pos_acc + i);
                   (pos_acc + i + (Zed_utf8.length s))
-                ) layer 0; 
+                ) 0 layer |> ignore; 
               ()
             ) layers;
           LTerm.render term matrix
