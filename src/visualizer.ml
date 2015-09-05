@@ -257,8 +257,12 @@ module Term = struct
     open Anim.T
     open LTerm_style 
 
-    (*goto find out if I want to lift ALL layers at the same time, or collect them later
+    (*gomaybe think if I want to lift ALL layers at the same time, or collect them later
       after they've become signals... *)
+    (*goto possibly extend this function with a non-changing fold over (S.value of) messages
+      > this way overlays can be rendered without becoming part of animation layers @ def time
+      > still.. think of better solution?
+    *)
     let lift_anim anim_def = S.fold 
         (fun anim_acc _ -> Anim.incr_anim anim_acc) 
         ~eq:(Anim.equal ~eq:(=))
@@ -316,20 +320,25 @@ module Term = struct
           Ae ({ std_st with s = s0; c_fg = c_i 3; i = outer_space s0 }, None);
           Ae ({ std_st with s = s1; c_fg = c_i 3; i = space_between }, None);
         ], None) 
-      and def_curtain0 = 
-        let len = 30 
-        and indent = 3 in
+      and make_curtain dir str len indent = 
         Al (List.init len (fun iter -> 
             Ae ({ std_st with 
-                  s = "\\"; 
+                  s = str; 
                   c_fg = c_i 8; 
                   i = indent
-                }, None )) |> Al.indent_head (cols - (len*(indent +1))), 
+                }, None )) 
+            |> Al.indent_head ( match dir with 
+                | `Go_left -> cols - (len*(indent +1))
+                | `Go_right -> 0 ), 
             (*<goto this case of math shows that I might want a rendering wrapper
                that supports 'overdraw' to the right (left is fine)
             *)
-            Some (Al.indent_head (-1)))
-      in lift_anim [def_bg; def_title; def_curtain0]
+            Some (Al.indent_head (match dir with `Go_left -> -1 | _ -> 1)))
+      in lift_anim [
+        def_bg; def_title; 
+        make_curtain `Go_left "\\" 30 3;
+        make_curtain `Go_right "/" 5 4
+      ]
 
 (* weird effect :o some render artifact? (yes from overdraw right)
       let def_curtain0 = 
