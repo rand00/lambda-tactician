@@ -179,13 +179,11 @@ module Term = struct
       > but where does the animations get their updates from? > a mapped 'update' over Gstate.t -> diff signals (of anims)
            , later collected together in a full signal (of a gameboard anim collection)
              > eval this to Lambdaterm printable type
-        . where does the frame thread get startet > after definition of graph 
-          ! test if framerate-thread also blocks rest of program... (should not be a Lwt_main.run.. but just an async ?)
         . how are new animations initiated?
           > are they just statically defined closures acting on board/gstate? 
-        . ! can old animation be running alongside new animations?
-          > need recursive animation wrapping (recursive ADT interface?)
-          > can be used for _composing_ complex animations from simple ones
+            > or can you add new animations to the graph? (one would need a recursive
+              animation definition? -> we already have! see constructor Al who's rule can 
+              add new animations inside list; and rule can depend on some signal! (with S.value)
     *)
 
     let app_mode, send_app_mode = E.create ()
