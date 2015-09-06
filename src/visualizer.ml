@@ -319,10 +319,10 @@ module Term = struct
     end
 
     (*goto change loading(/splash) animation to one with layers
-        1. movement static "lambda tactician" in bg + color swoosh over?
-        2. ++ layerS with "/"or"\\" flying by in different colors; purple,redish,blueish
+        1. transform "lambda tactician" letters + color swoosh over?
+        2. add colors (+/color-animations) to curtains purple,redish,blueish
     *)
-    (*>goo*)
+    (*>goo2*)
     let loading_anim = 
       let s0, s1 = "Lambda", "Tactician" 
       and cols = S.value columns 
@@ -360,13 +360,9 @@ module Term = struct
         . name
         . gameboard (how to map blocks to enduring animations? (id's rem in anim-state?))
     *)
-    (*< goto think about how 'switching' animations are supposed to be put inside a layer,
-        when layers are lower code; are the switch just a closure that evaluates to something?
-        ... but closures just map over state - not animation tree; so we cannot extend 
-            animation tree on the fly with this method
-            > maybe go in direction where we have a message-animation signal that can switch
-              over animations and insert node in animation tree (S.value / mapping over 
-              higher code?)
+    (*< let some 'layer-rule'-closure be mapped over the 'anim_layers' signal
+          > this depends (with S.value or normal signal depend) on some signals with 
+            state for creating messages e.g.
     *)
 
 
@@ -381,11 +377,6 @@ module Term = struct
       |> S.switch 
 
     (**Rendering*)
-
-    type render_elem = {
-      indent : int;
-      content : LTerm_text.markup;
-    }
 
     (*gomaybe Anim.eval should be done more efficiently with some kind of fold instead*)
     let anim_layers = LTerm_text.( 
@@ -416,18 +407,18 @@ module Term = struct
         LTerm_draw.context matrix dim
       ) render_width draw_matrix
 
+    (*goto define wrapper for render*)
+    (*<goo*)
 
     let visualize = 
       S.l3 (fun layers context matrix -> 
           LTerm_draw.clear context;
           List.iter (fun layer -> 
               List.fold_left (fun pos_acc {s; i; c_fg; c_bg} ->
-                  let open LTerm_text in
-                  let styled = [B_fg c_fg; B_bg c_bg; S s; E_bg; E_fg]
-                  in
-                  LTerm_text.eval styled
+                  LTerm_text.([B_fg c_fg; B_bg c_bg; S s; E_bg; E_fg])
+                  |> LTerm_text.eval 
                   |> LTerm_draw.draw_styled context 0 (pos_acc + i);
-                  (*<goto define a wrapper for drawing that doesn't fuckup with overdraw*)
+                  (*<goto use (to be) new render wrapper*)
                   (pos_acc + i + (Zed_utf8.length s))
                 ) 0 layer |> ignore; 
               ()
