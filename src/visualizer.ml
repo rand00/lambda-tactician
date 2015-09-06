@@ -277,6 +277,7 @@ module Term = struct
       (*  prev : 'a option;*)
     }
 
+    (*goto rename to new_st?*)
     let std_st = {
       s = ""; 
       i = 0;
@@ -301,6 +302,24 @@ module Term = struct
           (Ae ({st with i = i + plus}, f))::tl 
     end
 
+    module Adef = struct 
+
+      let make_curtain dir str ~len ~indent ~cols = 
+        Al (List.init len (fun iter -> 
+            Ae ({ std_st with 
+                  s = str; 
+                  c_fg = c_i 8; 
+                  i = indent
+                }, None )) 
+            |> Al.indent_head ( match dir with 
+                | `Go_left -> cols - (len*(indent +1))
+                | `Go_right -> 0 ), 
+            (*<goto this case shows we want a rendering wrapper
+               that supports 'overdraw' to the right (left is fine) .. *)
+            Some (Al.indent_head (match dir with `Go_left -> -1 | _ -> 1)))
+
+    end
+
     (*goto change loading(/splash) animation to one with layers
         1. movement static "lambda tactician" in bg + color swoosh over?
         2. ++ layerS with "/"or"\\" flying by in different colors; purple,redish,blueish
@@ -314,42 +333,17 @@ module Term = struct
         ((float cols) /. 2.) -. ((float space_between) /. 2.) -.
         (float (String.length str))
         |> int_of_float in
-      let def_bg = Ae (
+      let bg = Ae (
           { std_st with s = String.make cols '-'; c_fg = c_i 3 }, None) 
-      and def_title = Al ([ 
+      and title = Al ([ 
           Ae ({ std_st with s = s0; c_fg = c_i 3; i = outer_space s0 }, None);
           Ae ({ std_st with s = s1; c_fg = c_i 3; i = space_between }, None);
         ], None) 
-      and make_curtain dir str len indent = 
-        Al (List.init len (fun iter -> 
-            Ae ({ std_st with 
-                  s = str; 
-                  c_fg = c_i 8; 
-                  i = indent
-                }, None )) 
-            |> Al.indent_head ( match dir with 
-                | `Go_left -> cols - (len*(indent +1))
-                | `Go_right -> 0 ), 
-            (*<goto this case of math shows that I might want a rendering wrapper
-               that supports 'overdraw' to the right (left is fine)
-            *)
-            Some (Al.indent_head (match dir with `Go_left -> -1 | _ -> 1)))
       in lift_anim [
-        def_bg; def_title; 
-        make_curtain `Go_left "\\" 30 3;
-        make_curtain `Go_right "/" 5 4
+        bg; title; 
+        Adef.make_curtain `Go_left "\\" ~len:30 ~indent:3 ~cols;
+        Adef.make_curtain `Go_right "/" ~len:5 ~indent:4 ~cols
       ]
-
-(* weird effect :o some render artifact? (yes from overdraw right)
-      let def_curtain0 = 
-        Al (List.init 8 (fun iter -> 
-            Ae ({ std_st with 
-                  s = "\\"; 
-                  c_fg = c_i 6; 
-                  i = cols-(iter*2) }, 
-                Some move_left)), 
-            None)
-*)
 
     let game_anim = 
       lift_anim [
@@ -435,6 +429,7 @@ module Term = struct
                   in
                   LTerm_text.eval styled
                   |> LTerm_draw.draw_styled context 0 (pos_acc + i);
+                  (*<goto define a wrapper for drawing that doesn't fuckup with overdraw*)
                   (pos_acc + i + (Zed_utf8.length s))
                 ) 0 layer |> ignore; 
               ()
