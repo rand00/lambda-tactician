@@ -409,6 +409,7 @@ module Term = struct
 
     let snoc l e = e :: l (*reverse args of 'cons'*)
 
+(* We don't need this ... 
     let cropped_anim_layers = S.l2 (fun max_width layers -> 
         List.fold_right (fun layer acc -> 
             List.fold_left (fun (pos_acc, res_acc) ({s; i} as st) ->
@@ -423,6 +424,7 @@ module Term = struct
             |> snoc acc
           ) layers []
       ) render_width anim_layers 
+*)
 
     let visualize = 
       S.l3 (fun layers context matrix -> 
@@ -437,7 +439,7 @@ module Term = struct
               ()
             ) layers;
           LTerm.render term matrix
-        ) cropped_anim_layers draw_context draw_matrix
+        ) anim_layers draw_context draw_matrix
 
 
     let _ = S.keep visualize
