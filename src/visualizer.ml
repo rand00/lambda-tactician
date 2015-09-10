@@ -176,7 +176,8 @@ module Term = struct
    *)
 
     (*howto; map gameboard to set of signals (animations) 
-      > but where does the animations get their updates from? > a mapped 'update' over Gstate.t -> diff signals (of anims)
+      > but where does the animations get their updates from? 
+         > a mapped 'update' over Gstate.t -> diff signals (of anims)
            , later collected together in a full signal (of a gameboard anim collection)
              > eval this to Lambdaterm printable type
         . how are new animations initiated?
@@ -340,7 +341,7 @@ module Term = struct
       in lift_anim [
         bg; title; 
         Adef.make_curtain `Go_left "\\" ~len:30 ~indent:3 ~cols;
-        Adef.make_curtain `Go_right "/" ~len:5 ~indent:4 ~cols
+        Adef.make_curtain `Go_right "/" ~len:15 ~indent:4 ~cols
       ]
 
     let game_anim = 
@@ -378,7 +379,8 @@ module Term = struct
 
     (**Rendering*)
 
-    (*gomaybe Anim.eval should be done more efficiently with some kind of fold instead*)
+    (*>gomaybe Anim.eval should be done more efficiently with some kind of fold instead*)
+    (*in reality this signal is the flattened representation of the animation layers*)
     let anim_layers = LTerm_text.( 
         visu_switcher >|~ (fun l -> 
             Anim.eval l
@@ -393,9 +395,7 @@ module Term = struct
         ~get:(fun {s; i} -> i + (Zed_utf8.length s))
       |> fun lengths -> List.fold_right max lengths 0
 
-    let render_width = S.l2 (fun visu_width columns -> 
-        max visu_width columns
-      ) visu_width columns
+    let render_width = columns
 
     let draw_matrix = render_width >|~ (fun render_width -> 
         LTerm_geom.( 
@@ -407,8 +407,22 @@ module Term = struct
         LTerm_draw.context matrix dim
       ) render_width draw_matrix
 
-    (*goto define wrapper for render*)
-    (*<goo*)
+    let snoc l e = e :: l (*reverse args of 'cons'*)
+
+    let cropped_anim_layers = S.l2 (fun max_width layers -> 
+        List.fold_right (fun layer acc -> 
+            List.fold_left (fun (pos_acc, res_acc) ({s; i} as st) ->
+                let curr_len = pos_acc + i + (Zed_utf8.length s) in
+                if curr_len > max_width then 
+                  (curr_len, res_acc)
+                else 
+                  (curr_len, st::res_acc)
+              ) (0, []) layer
+            |> snd 
+            |> List.rev 
+            |> snoc acc
+          ) layers []
+      ) render_width anim_layers 
 
     let visualize = 
       S.l3 (fun layers context matrix -> 
@@ -418,13 +432,12 @@ module Term = struct
                   LTerm_text.([B_fg c_fg; B_bg c_bg; S s; E_bg; E_fg])
                   |> LTerm_text.eval 
                   |> LTerm_draw.draw_styled context 0 (pos_acc + i);
-                  (*<goto use (to be) new render wrapper*)
                   (pos_acc + i + (Zed_utf8.length s))
                 ) 0 layer |> ignore; 
               ()
             ) layers;
           LTerm.render term matrix
-        ) anim_layers draw_context draw_matrix
+        ) cropped_anim_layers draw_context draw_matrix
 
 
     let _ = S.keep visualize
