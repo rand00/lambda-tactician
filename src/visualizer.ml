@@ -284,7 +284,10 @@ module Term = struct
       c_bg = default 
     }
 
-    let c_i = LTerm_style.index
+    module Color = struct 
+      (*goto make a lerp color func (to be used first for curtain anim)*)
+      let i = LTerm_style.index
+    end
 
     (*goto make more helper funcs + move these modules somewhere else?*)
 
@@ -307,7 +310,7 @@ module Term = struct
         Al (List.init len (fun iter -> 
             Ae ({ std_st with 
                   s = str; 
-                  c_fg = c_i 8; 
+                  c_fg = Color.i 8; 
                   i = indent
                 }, None )) 
             |> Al.indent_head ( match dir with 
@@ -317,6 +320,19 @@ module Term = struct
                that supports 'overdraw' to the right (left is fine) .. *)
             Some (Al.indent_head (match dir with `Go_left -> -1 | _ -> 1)))
 
+      (*goto 
+        . test
+        . use in lambd tac strings
+      *)
+      let al_of_str str ~ae_init_map ~ae_succ_map ~all_map = 
+        Al ((String.enum str) |> Enum.map 
+              (fun c -> 
+                 Ae ( { std_st with s = (String.of_char c) } 
+                      |> ae_init_map
+                    , ae_succ_map ))
+            |> List.of_enum, all_map)
+
+      (*<goo*)
     end
 
     (*goto change loading(/splash) animation to one with layers
@@ -333,15 +349,15 @@ module Term = struct
         (float (String.length str))
         |> int_of_float in
       let bg = Ae (
-          { std_st with s = String.make cols '-'; c_fg = c_i 3 }, None) 
+          { std_st with s = String.make cols '-'; c_fg = Color.i 3 }, None) 
       and title = Al ([ 
-          Ae ({ std_st with s = s0; c_fg = c_i 3; i = outer_space s0 }, None);
-          Ae ({ std_st with s = s1; c_fg = c_i 3; i = space_between }, None);
+          Ae ({ std_st with s = s0; c_fg = Color.i 3; i = outer_space s0 }, None);
+          Ae ({ std_st with s = s1; c_fg = Color.i 3; i = space_between }, None);
         ], None) 
       in lift_anim [
         bg; title; 
-        Adef.make_curtain `Go_left "\\" ~len:30 ~indent:3 ~cols;
-        Adef.make_curtain `Go_right "/" ~len:15 ~indent:4 ~cols
+        Adef.make_curtain `Go_left "\\" ~len:20 ~indent:3 ~cols;
+        Adef.make_curtain `Go_right "/" ~len:15 ~indent:5 ~cols
       ]
 
     let game_anim = 
@@ -407,9 +423,9 @@ module Term = struct
         LTerm_draw.context matrix dim
       ) render_width draw_matrix
 
+(* We don't need this ... 
     let snoc l e = e :: l (*reverse args of 'cons'*)
 
-(* We don't need this ... 
     let cropped_anim_layers = S.l2 (fun max_width layers -> 
         List.fold_right (fun layer acc -> 
             List.fold_left (fun (pos_acc, res_acc) ({s; i} as st) ->
