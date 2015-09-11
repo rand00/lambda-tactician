@@ -308,8 +308,8 @@ module Term = struct
     module Al = struct 
       let indent_head plus = function
         | [] -> [] 
-        | (Ae ({i} as st, f))::tl -> 
-          (Ae ({st with i = i + plus}, f))::tl 
+        | (Ae ({i} as st, f))::tl -> (Ae ({st with i = i + plus}, f))::tl 
+        | (Al _)::tl as al -> al
     end
 
     module Adef = struct 
@@ -335,10 +335,10 @@ module Term = struct
       let anim_of_str str ~ae_init_mapi ~ae_succ_mapi ~all_map = 
         Al ((String.enum str) |> Enum.mapi 
               (fun i c -> 
-                 Ae ( { std_st with s = (String.of_char c) } 
-                      |> ae_init_mapi i
+                 Ae ( { std_st with s = (String.of_char c) } |> ae_init_mapi i
                     , Some (ae_succ_mapi i)))
-            |> List.of_enum, all_map)
+            |> List.of_enum
+           , all_map)
 
       (*<goo*)
 
@@ -367,9 +367,9 @@ module Term = struct
             ~ae_succ_mapi:(fun i -> (Ae.each 10 (fun st -> match i with
                 | 0 -> { st with i = st.i - (String.length s0) }
                 | _ -> { st with i = st.i + 1 } )))
+            ~all_map:None
             (*<goo *)
             (*<goto test why does 'each' function make 'equal' fail with functional value?*)
-            ~all_map:(Some id)
             (*< goto do same of Tactician*)
         ], None) 
       in lift_anim [
