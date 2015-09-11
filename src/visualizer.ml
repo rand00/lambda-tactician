@@ -324,16 +324,19 @@ module Term = struct
         . test
         . use in lambd tac strings
       *)
-      let al_of_str str ~ae_init_map ~ae_succ_map ~all_map = 
-        Al ((String.enum str) |> Enum.map 
-              (fun c -> 
+      let anim_of_str str ~ae_init_mapi ~ae_succ_mapi ~all_map = 
+        Al ((String.enum str) |> Enum.mapi 
+              (fun i c -> 
                  Ae ( { std_st with s = (String.of_char c) } 
-                      |> ae_init_map
-                    , ae_succ_map ))
+                      |> ae_init_mapi i
+                    , Some (ae_succ_mapi i)))
             |> List.of_enum, all_map)
 
       (*<goo*)
+
     end
+
+    let id x = x
 
     (*goto change loading(/splash) animation to one with layers
         1. transform "lambda tactician" letters + color swoosh over?
@@ -341,7 +344,7 @@ module Term = struct
     *)
     (*>goo2*)
     let loading_anim = 
-      let s0, s1 = "Lambda", "Tactician" 
+      let s0, s1 = "Lambda", "Tactician"
       and cols = S.value columns 
       and space_between = 9 in
       let outer_space str = 
@@ -351,8 +354,17 @@ module Term = struct
       let bg = Ae (
           { std_st with s = String.make cols '-'; c_fg = Color.i 3 }, None) 
       and title = Al ([ 
-          Ae ({ std_st with s = s0; c_fg = Color.i 3; i = outer_space s0 }, None);
-          Ae ({ std_st with s = s1; c_fg = Color.i 3; i = space_between }, None);
+          Adef.anim_of_str s0
+            ~ae_init_mapi:(fun i st -> match i with 
+                | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
+                | _ -> { st with c_fg = Color.i 3 } )
+            ~ae_succ_mapi:(fun i st -> match i with
+                | 0 -> { st with i = st.i - (String.length s0) }
+                | _ -> { st with i = st.i + 1 } )
+            (*<goo *)
+            (*<goto do this with a new 'each' function *)
+            ~all_map:(Some id)
+            (*< goto do same of Tactician*)
         ], None) 
       in lift_anim [
         bg; title; 
