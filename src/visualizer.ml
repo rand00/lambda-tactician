@@ -289,12 +289,20 @@ module Term = struct
       let i = LTerm_style.index
     end
 
+    let id x = x
+
     (*goto make more helper funcs + move these modules somewhere else?*)
 
     module Ae = struct 
+
       let indent_incr inc each ({i} as st) = {
         st with i=(if S.value frames_s mod each = 0 then i + inc else i)
       } 
+
+      let each fr f = 
+        match (S.value frames_s mod fr) + Random.int fr with
+        | 0 -> f | _ -> id
+
     end
 
     module Al = struct 
@@ -336,8 +344,6 @@ module Term = struct
 
     end
 
-    let id x = x
-
     (*goto change loading(/splash) animation to one with layers
         1. transform "lambda tactician" letters + color swoosh over?
         2. add colors (+/color-animations) to curtains purple,redish,blueish
@@ -358,11 +364,11 @@ module Term = struct
             ~ae_init_mapi:(fun i st -> match i with 
                 | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
                 | _ -> { st with c_fg = Color.i 3 } )
-            ~ae_succ_mapi:(fun i st -> match i with
+            ~ae_succ_mapi:(fun i -> (Ae.each 10 (fun st -> match i with
                 | 0 -> { st with i = st.i - (String.length s0) }
-                | _ -> { st with i = st.i + 1 } )
+                | _ -> { st with i = st.i + 1 } )))
             (*<goo *)
-            (*<goto do this with a new 'each' function *)
+            (*<goto test why does 'each' function make 'equal' fail with functional value?*)
             ~all_map:(Some id)
             (*< goto do same of Tactician*)
         ], None) 
