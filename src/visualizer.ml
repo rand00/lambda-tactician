@@ -285,16 +285,16 @@ module Term = struct
     }
 
     module Color = struct 
+      (*goo*)
       (*goto make a lerp color func (to be used first for curtain anim)*)
       let i = LTerm_style.index
     end
 
     let id x = x
 
-    (*goto move helper modules somewhere else?*)
+    (*goto (in general) move helper modules somewhere else?*)
 
-    let each fr f = 
-      match S.value frames_s mod fr with 0 -> f | _ -> id
+    let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> id x
 
     module Ae = struct 
 
@@ -323,14 +323,8 @@ module Term = struct
             |> Al.indent_head ( match dir with 
                 | `Go_left -> cols - (len*(indent +1))
                 | `Go_right -> 0 ), 
-            (*<goto this case shows we want a rendering wrapper
-               that supports 'overdraw' to the right (left is fine) .. *)
             Some (Al.indent_head (match dir with `Go_left -> -1 | _ -> 1)))
 
-      (*goto 
-        . test
-        . use in lambd tac strings
-      *)
       let anim_of_str str ~ae_init_mapi ~ae_succ_mapi ~all_map = 
         Al ((String.enum str) |> Enum.mapi 
               (fun i c -> 
@@ -338,8 +332,6 @@ module Term = struct
                     , Some (ae_succ_mapi i)))
             |> List.of_enum
            , all_map)
-
-      (*<goo*)
 
     end
 
@@ -363,10 +355,7 @@ module Term = struct
             ~ae_init_mapi:(fun i st -> match i with 
                 | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
                 | _ -> { st with c_fg = Color.i 3 } )
-            ~ae_succ_mapi:(fun i -> (each 25 (fun st -> match i with 
-                (*goto: each is only applied once, need be applied all the time 
-                  -> where to put it?
-                *)
+            ~ae_succ_mapi:(fun i -> (each 11 (fun st -> match i with 
                 | 0 -> { st with i = st.i - (String.length s0) }
                 | _ -> { st with i = st.i + 1 } )))
             ~all_map:None
@@ -406,11 +395,15 @@ module Term = struct
 
     let visu_switcher = 
       let app_mode_s = (S.hold `Mode_loading app_mode) in
-      S.map (function
+      S.map 
+        (function
             `Mode_loading -> loading_anim
           | `Mode_game -> game_anim
         ) app_mode_s
       |> S.switch 
+        ~eq:(Anim.equal ~eq:(=))         
+    (*< apparantly we need this for not failing on equality-check, even though it's given at lift-time*)
+
 
     (**Rendering*)
 
