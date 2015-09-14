@@ -291,17 +291,16 @@ module Term = struct
 
     let id x = x
 
-    (*goto make more helper funcs + move these modules somewhere else?*)
+    (*goto move helper modules somewhere else?*)
+
+    let each fr f = 
+      match S.value frames_s mod fr with 0 -> f | _ -> id
 
     module Ae = struct 
 
       let indent_incr inc each ({i} as st) = {
         st with i=(if S.value frames_s mod each = 0 then i + inc else i)
       } 
-
-      let each fr f = 
-        match (S.value frames_s mod fr) + Random.int fr with
-        | 0 -> f | _ -> id
 
     end
 
@@ -364,12 +363,14 @@ module Term = struct
             ~ae_init_mapi:(fun i st -> match i with 
                 | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
                 | _ -> { st with c_fg = Color.i 3 } )
-            ~ae_succ_mapi:(fun i -> (Ae.each 10 (fun st -> match i with
+            ~ae_succ_mapi:(fun i -> (each 25 (fun st -> match i with 
+                (*goto: each is only applied once, need be applied all the time 
+                  -> where to put it?
+                *)
                 | 0 -> { st with i = st.i - (String.length s0) }
                 | _ -> { st with i = st.i + 1 } )))
             ~all_map:None
             (*<goo *)
-            (*<goto test why does 'each' function make 'equal' fail with functional value?*)
             (*< goto do same of Tactician*)
         ], None) 
       in lift_anim [
