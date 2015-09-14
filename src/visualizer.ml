@@ -285,8 +285,15 @@ module Term = struct
     }
 
     module Color = struct 
-      (*goo*)
-      (*goto make a lerp color func (to be used first for curtain anim)*)
+
+      let lerp (r,g,b) (r',g',b') r1 r2 v = 
+        let _ = assert (v >= r1 && v <= r2) in
+        let v_pct = (v -. r1) /. (r2 -. r1) in 
+        let r'' = ((r' -. r) *. v_pct) +. r
+        and g'' = ((g' -. g) *. v_pct) +. g
+        and b'' = ((b' -. b) *. v_pct) +. b 
+        in (r'', g'', b'')
+        
       let i = LTerm_style.index
     end
 
