@@ -25,16 +25,18 @@ let layer_eq ~eq s s' =
         try List.fold_right2 (fun e e' acc_eq -> 
             acc_eq && aux e e'
           ) le le' true
-        with LazyList.Different_list_size _ -> false
+        with _ -> false
       end
     | Ae (state, _), Ae (state', _) -> eq state state'
     | _ -> false
   in aux s s'
 
 (*For layered animations*)
-let equal ~eq l l' = List.fold_right2 (fun e e' acc_eq -> 
-    acc_eq && layer_eq ~eq e e'
-  ) l l' true
+let equal ~eq l l' = 
+  try List.fold_right2 (fun e e' acc_eq -> 
+      acc_eq && layer_eq ~eq e e'
+    ) l l' true
+  with _ -> false
 
 let map_rules e = function 
   | Some r -> r e
