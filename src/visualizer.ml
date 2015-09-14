@@ -208,7 +208,7 @@ module Term = struct
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> Lwt_unix.sleep 3.
+      wait_for >>= fun _ -> Lwt_unix.sleep 5.
 
     let update gstate = 
       run_frames_on_first ();
@@ -256,9 +256,7 @@ module Term = struct
     open Anim.T
     open LTerm_style 
 
-    (*gomaybe think if I want to lift ALL layers at the same time, or collect them later
-      after they've become signals... *)
-    (*goto possibly extend this function with a non-changing fold over (S.value of) messages
+    (*goto possibly extend this function with a non-changing fold over sign messages
       > this way overlays can be rendered without becoming part of animation layers @ def time
       > still.. think of better solution?
     *)
@@ -276,7 +274,6 @@ module Term = struct
       (*  prev : 'a option;*)
     }
 
-    (*goto rename to new_st?*)
     let std_st = {
       s = ""; 
       i = 0;
@@ -295,6 +292,7 @@ module Term = struct
         in (r'', g'', b'')
         
       let i = LTerm_style.index
+
     end
 
     let id x = x
@@ -362,17 +360,24 @@ module Term = struct
             ~ae_init_mapi:(fun i st -> match i with 
                 | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
                 | _ -> { st with c_fg = Color.i 3 } )
-            ~ae_succ_mapi:(fun i -> (each 11 (fun st -> match i with 
+            ~ae_succ_mapi:(fun i -> (each 14 (fun st -> match i with 
                 | 0 -> { st with i = st.i - (String.length s0) }
+                | _ -> { st with i = st.i + 1 } )))
+            ~all_map:None;
+          Adef.anim_of_str s1
+            ~ae_init_mapi:(fun i st -> match i with 
+                | 0 -> { st with i = space_between; c_fg = Color.i 3 }
+                | _ -> { st with c_fg = Color.i 3 } )
+            ~ae_succ_mapi:(fun i -> (each 14 (fun st -> match i with 
+                | 0 -> st
                 | _ -> { st with i = st.i + 1 } )))
             ~all_map:None
             (*<goo *)
-            (*< goto do same of Tactician*)
         ], None) 
       in lift_anim [
         bg; title; 
-        Adef.make_curtain `Go_left "\\" ~len:20 ~indent:3 ~cols;
-        Adef.make_curtain `Go_right "/" ~len:15 ~indent:5 ~cols
+        Adef.make_curtain `Go_left "\\" ~len:10 ~indent:7 ~cols;
+        Adef.make_curtain `Go_right "/" ~len:10 ~indent:8 ~cols
       ]
 
     let game_anim = 
