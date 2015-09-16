@@ -208,7 +208,7 @@ module Term = struct
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> Lwt_unix.sleep 5.
+      wait_for >>= fun _ -> Lwt_unix.sleep 20.
 
     let update gstate = 
       run_frames_on_first ();
@@ -266,11 +266,18 @@ module Term = struct
         anim_def
         frames
 
+    type extra = {
+      pos : float
+    }
+
+    let std_ex = { pos = 0. }
+
     type state = {
       s : string;
       i : int; (*indent from left*)
       c_fg : color;
-      c_bg : color
+      c_bg : color;
+      ex : extra;
       (*  prev : 'a option;*)
     }
 
@@ -278,18 +285,24 @@ module Term = struct
       s = ""; 
       i = 0;
       c_fg = default;
-      c_bg = default 
+      c_bg = default;
+      ex = std_ex
     }
 
     module Color = struct 
 
       let lerp (r,g,b) (r',g',b') r1 r2 v = 
-        let _ = assert (v >= r1 && v <= r2) in
+        let f,i = float, int_of_float in
+        (* let _ = assert (v >= r1 && v <= r2) in*)
         let v_pct = (v -. r1) /. (r2 -. r1) in 
-        let r'' = ((r' -. r) *. v_pct) +. r
-        and g'' = ((g' -. g) *. v_pct) +. g
-        and b'' = ((b' -. b) *. v_pct) +. b 
-        in (r'', g'', b'')
+        let r'' = (((f r') -. (f r)) *. v_pct) +. (f r)
+        and g'' = (((f g') -. (f g)) *. v_pct) +. (f g)
+        and b'' = (((f b') -. (f b)) *. v_pct) +. (f b)
+        in (
+          max 0 (min (i r'') 255)
+        , max 0 (min (i g'') 255)
+        , max 0 (min (i b'') 255)
+        )
         
       let i = LTerm_style.index
 
@@ -353,8 +366,25 @@ module Term = struct
         ((float cols) /. 2.) -. ((float space_between) /. 2.) -.
         (float (String.length str))
         |> int_of_float in
-      let bg = Ae (
-          { std_st with s = String.make cols '-'; c_fg = Color.i 3 }, None) 
+      let c1 = (160, 158, 90)
+      and c2 = (117, 26, 63) 
+      and n_sines = 50. (*goto test*)
+      and speed = (Float.pi /. (float cols))
+      in
+      let bg = Adef.anim_of_str (String.make cols '-')
+          ~ae_init_mapi:(fun i st -> { st with ex = { 
+              pos = (float i) *. ((Float.pi *. n_sines) /. (float cols))
+            }})
+          ~ae_succ_mapi:(fun i st -> 
+              { st with 
+                ex = { pos = st.ex.pos +. speed };
+                c_fg = 
+                  let r,g,b = Color.lerp c1 c2 0. 1. (sin st.ex.pos) in
+                  LTerm_style.rgb r g b;
+              })
+          ~all_map:None
+        (*<goo*)
+      (*<goo - make bg anim color with sin + lerp + new state field?*)
       and title = Al ([ 
           Adef.anim_of_str s0
             ~ae_init_mapi:(fun i st -> match i with 
@@ -372,7 +402,6 @@ module Term = struct
                 | 0 -> st
                 | _ -> { st with i = st.i + 1 } )))
             ~all_map:None
-            (*<goo *)
         ], None) 
       in lift_anim [
         bg; title; 
