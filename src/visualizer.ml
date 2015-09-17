@@ -128,7 +128,7 @@ module Term = struct
 
       let update gstate = board gstate (fun s ->
           Sys.command "tput cuu1" |> ignore;
-          print_endline s
+          Lwt_io.printl s
         )
 
       let loading ~gstate ~wait_for = 
@@ -158,7 +158,7 @@ module Term = struct
 
   end
 
-  module Fancy : S = struct
+  module Fancy () : S = struct
 
     open Lwt
     open Lwt_react
@@ -353,11 +353,6 @@ module Term = struct
 
     end
 
-    (*goto change loading(/splash) animation to one with layers
-        1. transform "lambda tactician" letters + color swoosh over?
-        2. add colors (+/color-animations) to curtains purple,redish,blueish
-    *)
-    (*>goo2*)
     let loading_anim = 
       let s0, s1 = "Lambda", "Tactician"
       and cols = S.value columns 
@@ -365,13 +360,15 @@ module Term = struct
       let outer_space str = 
         ((float cols) /. 2.) -. ((float space_between) /. 2.) -.
         (float (String.length str))
-        |> int_of_float in
-      let c1 = (160, 158, 90)
-      and c2 = (117, 26, 63) 
-      and n_sines = 50. (*goto test*)
-      and speed = (Float.pi /. (float cols))
+        |> int_of_float 
       in
-      let bg = Adef.anim_of_str (String.make cols '-')
+      let bg = 
+        let c1 = (160, 158, 90)
+        and c2 = (88, 227, 171) 
+        and n_sines = 1.
+        and speed = (Float.pi /. (float cols)) *. 3.
+        in
+        Adef.anim_of_str (String.make cols '-')
           ~ae_init_mapi:(fun i st -> { st with ex = { 
               pos = (float i) *. ((Float.pi *. n_sines) /. (float cols))
             }})
@@ -383,8 +380,6 @@ module Term = struct
                   LTerm_style.rgb r g b;
               })
           ~all_map:None
-        (*<goo*)
-      (*<goo - make bg anim color with sin + lerp + new state field?*)
       and title = Al ([ 
           Adef.anim_of_str s0
             ~ae_init_mapi:(fun i st -> match i with 
@@ -398,7 +393,7 @@ module Term = struct
             ~ae_init_mapi:(fun i st -> match i with 
                 | 0 -> { st with i = space_between; c_fg = Color.i 3 }
                 | _ -> { st with c_fg = Color.i 3 } )
-            ~ae_succ_mapi:(fun i -> (each 14 (fun st -> match i with 
+            ~ae_succ_mapi:(fun i -> (each 20 (fun st -> match i with 
                 | 0 -> st
                 | _ -> { st with i = st.i + 1 } )))
             ~all_map:None
