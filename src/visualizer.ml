@@ -286,7 +286,7 @@ module Term = struct
       i = 0;
       c_fg = default;
       c_bg = default;
-      ex = std_ex
+      ex = std_ex;
     }
 
     module Color = struct 
@@ -365,6 +365,10 @@ module Term = struct
       let bg = 
         let c1 = (160, 158, 90)
         and c2 = (88, 227, 171) 
+(*
+        let c1 = (0, 0, 200)
+        and c2 = (255, 255, 255)
+*)
         and n_sines = 1.
         and speed = (Float.pi /. (float cols)) *. 3.
         in
@@ -380,24 +384,26 @@ module Term = struct
                   LTerm_style.rgb r g b;
               })
           ~all_map:None
-      and title = Al ([ 
-          Adef.anim_of_str s0
-            ~ae_init_mapi:(fun i st -> match i with 
-                | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
-                | _ -> { st with c_fg = Color.i 3 } )
-            ~ae_succ_mapi:(fun i -> (each 14 (fun st -> match i with 
-                | 0 -> { st with i = st.i - (String.length s0) }
-                | _ -> { st with i = st.i + 1 } )))
-            ~all_map:None;
-          Adef.anim_of_str s1
-            ~ae_init_mapi:(fun i st -> match i with 
-                | 0 -> { st with i = space_between; c_fg = Color.i 3 }
-                | _ -> { st with c_fg = Color.i 3 } )
-            ~ae_succ_mapi:(fun i -> (each 20 (fun st -> match i with 
-                | 0 -> st
-                | _ -> { st with i = st.i + 1 } )))
-            ~all_map:None
-        ], None) 
+      and title = 
+        let each_n = 20 
+        in Al ([ 
+            Adef.anim_of_str s0
+              ~ae_init_mapi:(fun i st -> match i with 
+                  | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
+                  | _ -> { st with c_fg = Color.i 3 } )
+              ~ae_succ_mapi:(fun i -> (each each_n (fun st -> match i with 
+                  | 0 -> { st with i = st.i - (String.length s0) }
+                  | _ -> { st with i = st.i + 1 } )))
+              ~all_map:None;
+            Adef.anim_of_str s1
+              ~ae_init_mapi:(fun i st -> match i with 
+                  | 0 -> { st with i = space_between; c_fg = Color.i 3 }
+                  | _ -> { st with c_fg = Color.i 3 } )
+              ~ae_succ_mapi:(fun i -> (each each_n (fun st -> match i with 
+                  | 0 -> st
+                  | _ -> { st with i = st.i + 1 } )))
+              ~all_map:None
+          ], None) 
       in lift_anim [
         bg; title; 
         Adef.make_curtain `Go_left "\\" ~len:10 ~indent:7 ~cols;
