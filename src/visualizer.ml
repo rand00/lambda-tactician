@@ -267,10 +267,11 @@ module Term = struct
         frames
 
     type extra = {
-      pos : float
+      pos : float;
+      age : int;
     }
 
-    let std_ex = { pos = 0. }
+    let std_ex = { pos = 0.; age = 0 }
 
     type state = {
       s : string;
@@ -373,12 +374,12 @@ module Term = struct
         and speed = (Float.pi /. (float cols)) *. 3.
         in
         Adef.anim_of_str (String.make cols '-')
-          ~ae_init_mapi:(fun i st -> { st with ex = { 
+          ~ae_init_mapi:(fun i st -> { st with ex = { st.ex with
               pos = (float i) *. ((Float.pi *. n_sines) /. (float cols))
             }})
           ~ae_succ_mapi:(fun i st -> 
               { st with 
-                ex = { pos = st.ex.pos +. speed };
+                ex = { st.ex with pos = st.ex.pos +. speed };
                 c_fg = 
                   let r,g,b = Color.lerp c1 c2 0. 1. (sin st.ex.pos) in
                   LTerm_style.rgb r g b;
@@ -386,14 +387,22 @@ module Term = struct
           ~all_map:None
       and title = 
         let each_n = 20 
+        and max_age = 5
         in Al ([ 
             Adef.anim_of_str s0
               ~ae_init_mapi:(fun i st -> match i with 
                   | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
                   | _ -> { st with c_fg = Color.i 3 } )
               ~ae_succ_mapi:(fun i -> (each each_n (fun st -> match i with 
-                  | 0 -> { st with i = st.i - (String.length s0) }
-                  | _ -> { st with i = st.i + 1 } )))
+                  | 0 -> { st with 
+                           i = if st.ex.age < max_age then 
+                               st.i - ((String.length s0) + 1) 
+                             else st.i;
+                           ex = { st.ex with age = succ st.ex.age }}
+                  | _ -> { st with 
+                           i = if st.ex.age < max_age then succ st.i else st.i;
+                           ex = { st.ex with age = succ st.ex.age }
+                         } )))
               ~all_map:None;
             Adef.anim_of_str s1
               ~ae_init_mapi:(fun i st -> match i with 
@@ -401,7 +410,10 @@ module Term = struct
                   | _ -> { st with c_fg = Color.i 3 } )
               ~ae_succ_mapi:(fun i -> (each each_n (fun st -> match i with 
                   | 0 -> st
-                  | _ -> { st with i = st.i + 1 } )))
+                  | _ -> { st with 
+                           i = if st.ex.age < max_age then succ st.i else st.i;
+                           ex = { st.ex with age = succ st.ex.age } 
+                         } )))
               ~all_map:None
           ], None) 
       in lift_anim [
