@@ -455,69 +455,54 @@ module Term = struct
 
     module Game_anim = struct
 
-      (*goto 
-        . use S.fix for recursing over animation, and incrementing it each time
-          > test this - does it diverge, and how can we fix this?
-            > save in the state what the prev. age was of the elem, and cmp with new?
-            > ! or put animation inside a tuple where prev value of anim is saved
-              for equality check
-        . 
-      *)
-
+      (** Old fixpoint alternative version of lifting animations:
       let eq_af (a, f) (a', f') = f = f' && Anim.equal ~eq:(=) a a'
 
       let define_fixp_anim af = 
         let af' = S.l2 (fun (a, f) f' -> 
-            if f = f' then (a, f) else (Anim.incr_anim a, f')
+            if f = f' then (a, f) else (Anim.incr_anim a, f') 
           ) af frames_s
             ~eq:eq_af
         in af', S.map ~eq:(Anim.equal ~eq:(=)) fst af' 
 
       let fix_anim anim = S.fix (anim, S.value frames_s) define_fixp_anim ~eq:eq_af
-
-      (*>goo*)
-      (*goto :
-        . how can anim_def get to depend on signals?
-          > in lower code: S.value .. (can only be used in rules, not in initvalues)
-              (as else it will not get updated)
-            > best solution; else there will be updates both from signals AND rules 
-              > (overwriting and confusion)
       *)
+
       let p0_name_a = 
         let anim = Ae( std_st, Some( fun st -> 
             { st with 
               s = S.value G_s.p0_name;
               c_fg = Color.i ((S.value frames_s / 10) mod 4)
             } ))
-        in fix_anim [anim]
+        in lift_anim [anim]
 
       (*>goo*)
+      (*goto define rest of animation parts (plus messages) *)
+
       let full = S.merge (@) [] [p0_name_a]
           (*[p0_name_a; p0_mana_a; gameboard_a; p1_mana_a; p1_name_a]*)
 
-
-  (*
-    let game_anim = 
-      lift_anim [
-        Ae ({ std_st with s = ">> game is running" }, 
-            Some (fun st -> match (S.value frames_s / 4) mod 4 with
-                | 0 -> { st with s = ">> game is running -" }
-                | 1 -> { st with s = ">> game is running --" }
-                | 2 -> { st with s = ">> game is running ---" } 
-                | 3 -> { st with s = ">> game is running ----" }
-                | _ -> { st with s = ">> game is running" }
-              ))
-      ]
-  *)
-      (*<goto make animation game-board 
-        > composed by:
-          . mana-bars
-          . name
-          . gameboard (how to map blocks to enduring animations? (id's rem in anim-state?))
+      (* Old test code:
+        let game_anim = 
+          lift_anim [
+            Ae ({ std_st with s = ">> game is running" }, 
+                Some (fun st -> match (S.value frames_s / 4) mod 4 with
+                    | 0 -> { st with s = ">> game is running -" }
+                    | 1 -> { st with s = ">> game is running --" }
+                    | 2 -> { st with s = ">> game is running ---" } 
+                    | 3 -> { st with s = ">> game is running ----" }
+                    | _ -> { st with s = ">> game is running" }
+                  ))
+          ]
       *)
-      (*< let some 'layer-rule'-closure be mapped over the 'anim_layers' signal
+      (*<goto make animation game-board 
+          > gameboard: how to map blocks to enduring animations? (id's rem in anim-state?)
+      *)
+
+      (*goto let some 'layer-rule'-closure be mapped over the 'anim_layers' signal
             > this depends (with S.value or normal signal depend) on some signals with 
-              state for creating messages e.g.
+              state for creating messages e.g.?
+          > else always have a message animation (which is empty when not used) 
       *)
 
     end
