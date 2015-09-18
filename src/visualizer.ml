@@ -208,7 +208,7 @@ module Term = struct
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> Lwt_unix.sleep 20.
+      wait_for >>= fun _ -> Lwt_unix.sleep 7.
 
     let update gstate = 
       run_frames_on_first ();
@@ -236,20 +236,51 @@ module Term = struct
     (*goto (later) make this depend on THIS modules visualization*)
     let suggest_len = Basic.suggest_len
 
-    let p0_mana = Gstate.( Player.(
-        let mana = E.map (fun {p0} -> p0.mana) gstate
-        in S.hold 1. mana
-      ))
+    module G_s = struct
+      
+      open Gstate
+      open Player
 
-    let p1_mana = Gstate.( Player.(
-        let mana = E.map (fun {p1} -> p1.mana) gstate
-        in S.hold 1. mana
-      ))
+      let p0_name = 
+          let name = E.map (fun {p0} -> p0.name) gstate
+          in S.hold "" name
 
-    let winner = Gstate.( Player.(
-        let winner = E.map (fun {winner} -> winner) gstate
-        in S.hold None winner
-      ))
+      let p1_name = 
+          let name = E.map (fun {p1} -> p1.name) gstate
+          in S.hold "" name
+
+      let p0_mana = 
+          let mana = E.map (fun {p0} -> p0.mana) gstate
+          in S.hold 1. mana
+
+      let p1_mana = 
+          let mana = E.map (fun {p1} -> p1.mana) gstate
+          in S.hold 1. mana
+
+      let p0_pos = 
+          let pos = E.map (fun {p0} -> p0.position) gstate
+          in S.hold Left pos
+
+      let p1_pos = 
+          let pos = E.map (fun {p1} -> p1.position) gstate
+          in S.hold Right pos
+
+      let winner = 
+          let winner = E.map (fun {winner} -> winner) gstate
+          in S.hold None winner
+
+      let turn = 
+          let turn = E.map (fun {turn} -> turn) gstate
+          in S.hold P0 turn
+
+      let board = 
+          let board = E.map (fun {board} -> board) gstate
+          in S.hold (Board.make 2) board
+
+
+      (*goto do turn, board, position*)
+
+    end
 
     (**Animations*)
 
@@ -422,6 +453,50 @@ module Term = struct
         Adef.make_curtain `Go_right "/" ~len:10 ~indent:8 ~cols
       ]
 
+    module Game_anim = struct
+
+      (*goto 
+        . use S.fix for recursing over animation, and incrementing it each time
+          > test this - does it diverge, and how can we fix this?
+            > save in the state what the prev. age was of the elem, and cmp with new?
+            > ! or put animation inside a tuple where prev value of anim is saved
+              for equality check
+        . 
+      *)
+
+      let eq_af (a, f) (a', f') = f = f' && Anim.equal ~eq:(=) a a'
+
+      let define_fixp_anim af = 
+        let af' = S.l2 (fun (a, f) f' -> 
+            if f = f' then (a, f) else (Anim.incr_anim a, f')
+          ) af frames_s
+            ~eq:eq_af
+        in af', S.map ~eq:(Anim.equal ~eq:(=)) fst af' 
+
+      let fix_anim anim = S.fix (anim, S.value frames_s) define_fixp_anim ~eq:eq_af
+
+      (*>goo*)
+      (*goto :
+        . how can anim_def get to depend on signals?
+          > in lower code: S.value .. (can only be used in rules, not in initvalues)
+              (as else it will not get updated)
+            > best solution; else there will be updates both from signals AND rules 
+              > (overwriting and confusion)
+      *)
+      let p0_name_a = 
+        let anim = Ae( std_st, Some( fun st -> 
+            { st with 
+              s = S.value G_s.p0_name;
+              c_fg = Color.i ((S.value frames_s / 10) mod 4)
+            } ))
+        in fix_anim [anim]
+
+      (*>goo*)
+      let full = S.merge (@) [] [p0_name_a]
+          (*[p0_name_a; p0_mana_a; gameboard_a; p1_mana_a; p1_name_a]*)
+
+
+  (*
     let game_anim = 
       lift_anim [
         Ae ({ std_st with s = ">> game is running" }, 
@@ -433,16 +508,19 @@ module Term = struct
                 | _ -> { st with s = ">> game is running" }
               ))
       ]
-    (*<goto make animation game-board 
-      > composed by:
-        . mana-bars
-        . name
-        . gameboard (how to map blocks to enduring animations? (id's rem in anim-state?))
-    *)
-    (*< let some 'layer-rule'-closure be mapped over the 'anim_layers' signal
-          > this depends (with S.value or normal signal depend) on some signals with 
-            state for creating messages e.g.
-    *)
+  *)
+      (*<goto make animation game-board 
+        > composed by:
+          . mana-bars
+          . name
+          . gameboard (how to map blocks to enduring animations? (id's rem in anim-state?))
+      *)
+      (*< let some 'layer-rule'-closure be mapped over the 'anim_layers' signal
+            > this depends (with S.value or normal signal depend) on some signals with 
+              state for creating messages e.g.
+      *)
+
+    end
 
 
     (**Game-mode switching*)
@@ -452,7 +530,7 @@ module Term = struct
       S.map 
         (function
             `Mode_loading -> loading_anim
-          | `Mode_game -> game_anim
+          | `Mode_game -> Game_anim.full
         ) app_mode_s
       |> S.switch 
         ~eq:(Anim.equal ~eq:(=))         
