@@ -50,6 +50,8 @@ let run_game () =
          };
   } 
   in
+  (*>goto refactor to become Visualizer.loading that takes some list of 
+      threads to wait for while loading (and having internal timer for own anim finish)*)
   let%lwt synth = Synth.run_with_loadscreen ~gstate ~visualizer
   in Control.gloop gstate 
     ~rules:(module Rules.Basic) 

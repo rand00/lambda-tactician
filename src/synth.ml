@@ -25,6 +25,7 @@ let run_with_loadscreen ~gstate ~visualizer =
   let open Lwt in
   let client = 
     SC.Server.Lwt.run () >>= ( function
+        (*>goto: should be a notification instead of a failure - (and also some debug info)*)
         | false -> fail_with
                      "Lambdatactian: SuperCollider server (scsynth) failed to start."
         | true -> SC.Client.Lwt.make ()) in
