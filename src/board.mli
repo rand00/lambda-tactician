@@ -24,6 +24,8 @@ val length : t -> int
 
 val enum : t -> Gametypes.element_wrap BatEnum.t
 
+val list : t -> Gametypes.element_wrap list
+
 val eval_action : t -> Gametypes.element_action -> t
 
 val increment_time : t -> t

@@ -33,6 +33,8 @@ let length = List.length
 
 let enum = List.enum
 
+let list t = t
+
 (**not in use*)
 let find_pos e board = 
   let pos,_ = List.findi (fun i e' -> 
