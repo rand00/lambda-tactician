@@ -288,15 +288,15 @@ module Term = struct
     open Anim.T
     open LTerm_style 
 
+    let eq a a' = Anim.equal ~eq:(=) a a'
+
     (*goto possibly extend this function with a non-changing fold over sign messages
       > this way overlays can be rendered without becoming part of animation layers @ def time
       > still.. think of better solution?
     *)
-    let eq a a' = Anim.equal ~eq:(=) a a'
-
-    let lift_anim anim_def = S.fold 
+    let lift_anim anim_def = S.fold ~eq 
         (fun anim_acc _ -> Anim.incr_anim anim_acc) 
-        ~eq anim_def frames
+        anim_def frames
 
     type extra = {
       pos : float;
@@ -528,13 +528,26 @@ module Term = struct
 
       let p1_name_a = make_name ~name_s:G_s.p1_name ~color:(Color.i 4)
 
-      (*goo*)
+      (*howto1 make animation game-board 
+          > gameboard: how to map blocks to enduring animations? 
+            > id's of blocks saved in anim-state? (yes)
+              > so need some function that takes 
+                . board as input
+                . maps correct anim-rules to moved-around blocks ((Al, block-list) -> Al)
+                  . (block-types are saved in animation state? or find better sol.?)
+                  > so it's an Al-rule?
+      *)
+      (*howto2> 
+        . make an Al-rule that links old blocks with some id with new blocks position
+          > this way anims of blocks can follow a block 
+            > make some system where rules gets reset/overrided at certain state events
+      *)
       (*goto make depend on player position like mana etc.*)
-(*
+      (*goo*)
       let gameboard_a = lift_anim [
           
+          
         ]
-*)
 
       (*<goo*)
       (*goto define rest of animation parts (plus messages) *)
@@ -545,16 +558,6 @@ module Term = struct
         |> S.map ~eq (fun l -> [ Al( l, None ) ] ) 
 
       (*[ (inv_buff_anim?); gameboard_a  ]*)
-
-      (*howto make animation game-board 
-          > gameboard: how to map blocks to enduring animations? 
-            > id's of blocks saved in anim-state? (yes)
-              > so need some function that takes 
-                . board as input
-                . maps correct anim-rules to moved-around blocks ((Al, block-list) -> Al)
-                  . (block-types are saved in animation state? or find better sol.?)
-                  > so it's an Al-rule?
-      *)
 
       (*goto let some 'layer-rule'-closure be mapped over the 'anim_layers' signal
             > this depends (with S.value or normal signal depend) on some signals with 
