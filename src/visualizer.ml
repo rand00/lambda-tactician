@@ -469,20 +469,44 @@ module Term = struct
 
       let lift_anim' anim = S.fix (anim, S.value frames_s) define_fixp_anim ~eq:eq_af
       *)
+      
+      (*goto move into Adef?*)
+      (*howto/what-to:
+        . should length be modifiable on the fly? (complicates things / will reset animations in manabar)
+          > no I think it should only be invisi.-buffers who's length dep. on columns
+        . generate mana-animation as Al([Ae's]) -> match on ppos inside Al-rule and apply reverse 
+          . (Ae's should both be empty and full mana-fields)
+          . Ae's rule control if should be empty/full field
+      *)
+      (*goo*)
+      let make_manabar =  
+        let manabar = Adef.anim_of_str "[.........]"
+            ~ae_init_mapi
+            ~ae_succ_mapi
 
-      let p0_name_a = 
-        let anim = Ae( std_st, Some( fun st -> 
-            { st with 
-              s = S.value G_s.p0_name;
-              c_fg = Color.i ((S.value frames_s / 10) mod 4)
-            } ))
-        in lift_anim [anim]
+        in match (S.value G_s.p0_pos), manabar with
+        | Right, Al (manabar, rule) -> Al (List.rev manabar, rule)
+        | Left, manabar -> manabar
 
+      (*>goo use make_manabar*)
+      let p0_mana_a = lift_anim [ 
+        
+
+      let p0_name_a = lift_anim [
+          Ae( std_st, Some( fun st -> 
+              { st with 
+                s = S.value G_s.p0_name;
+                c_fg = Color.i ((S.value frames_s / 10) mod 4)
+              } ))
+        ]
+        
       
 
       (*<goo*)
       (*goto define rest of animation parts (plus messages) *)
 
+
+      (*goto make order of anims depend on position of players*)
       let full = S.merge (@) [] [p0_name_a]
       (*[ (inv_buff_anim?); p0_mana_a; p0_name_a; gameboard_a; p1_name_a; p1_mana_a ]*)
 
