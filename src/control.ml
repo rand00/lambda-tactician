@@ -74,8 +74,7 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
         |> fun gstate -> { gstate with board } in
       (*<goto just wrap in lwt.return? (or use lwt_list inside)*)
 
-      let _ = Visualize.update gstate in
-      (*< goto make a lwt-call*)
+      let%lwt () = Visualize.update gstate in
 
       let board = 
         Board.remove_killed_elems board
