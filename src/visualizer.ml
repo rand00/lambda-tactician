@@ -348,6 +348,7 @@ module Term = struct
 
     module Ae = struct 
 
+      (*goto this is not used right now - can also be defined in terms of 'each'*)
       let indent_incr inc each ({i} as st) = {
         st with i=(if S.value frames_s mod each = 0 then i + inc else i)
       } 
@@ -385,6 +386,7 @@ module Term = struct
 
     end
 
+    (*goto place in own module and structure funcs. like Game_anim*)
     let loading_anim = 
       let s0, s1 = "Lambda", "Tactician"
       and cols = S.value columns 
@@ -465,7 +467,7 @@ module Term = struct
             ~eq:eq_af
         in af', S.map ~eq:(Anim.equal ~eq:(=)) fst af' 
 
-      let fix_anim anim = S.fix (anim, S.value frames_s) define_fixp_anim ~eq:eq_af
+      let lift_anim' anim = S.fix (anim, S.value frames_s) define_fixp_anim ~eq:eq_af
       *)
 
       let p0_name_a = 
@@ -476,27 +478,22 @@ module Term = struct
             } ))
         in lift_anim [anim]
 
-      (*>goo*)
+      
+
+      (*<goo*)
       (*goto define rest of animation parts (plus messages) *)
 
       let full = S.merge (@) [] [p0_name_a]
-          (*[p0_name_a; p0_mana_a; gameboard_a; p1_mana_a; p1_name_a]*)
+      (*[ (inv_buff_anim?); p0_mana_a; p0_name_a; gameboard_a; p1_name_a; p1_mana_a ]*)
 
-      (* Old test code:
-        let game_anim = 
-          lift_anim [
-            Ae ({ std_st with s = ">> game is running" }, 
-                Some (fun st -> match (S.value frames_s / 4) mod 4 with
-                    | 0 -> { st with s = ">> game is running -" }
-                    | 1 -> { st with s = ">> game is running --" }
-                    | 2 -> { st with s = ">> game is running ---" } 
-                    | 3 -> { st with s = ">> game is running ----" }
-                    | _ -> { st with s = ">> game is running" }
-                  ))
-          ]
-      *)
-      (*<goto make animation game-board 
-          > gameboard: how to map blocks to enduring animations? (id's rem in anim-state?)
+      (*howto make animation game-board 
+          > gameboard: how to map blocks to enduring animations? 
+            > id's of blocks saved in anim-state? (yes)
+              > so need some function that takes 
+                . board as input
+                . maps correct anim-rules to moved-around blocks ((Al, block-list) -> Al)
+                  . (block-types are saved in animation state? or find better sol.?)
+                  > so it's an Al-rule?
       *)
 
       (*goto let some 'layer-rule'-closure be mapped over the 'anim_layers' signal
@@ -519,7 +516,8 @@ module Term = struct
         ) app_mode_s
       |> S.switch 
         ~eq:(Anim.equal ~eq:(=))         
-    (*< apparantly we need this for not failing on equality-check, even though it's given at lift-time*)
+    (*< apparantly we need this for not failing on equality-check, 
+        even though it's given at lift-time*)
 
 
     (**Rendering*)
