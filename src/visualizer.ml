@@ -92,7 +92,7 @@ module Term = struct
       |> String.concat ""
 
     let board gstate print = 
-      let elems = List.of_enum (Board.enum gstate.board) in
+      let elems = Board.list gstate.board in
       let board_str = String.concat ""
           (List.concat 
              ((List.fold_right (fun elem acc -> 
@@ -208,11 +208,12 @@ module Term = struct
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> Lwt_unix.sleep 7.
+      wait_for >>= fun _ -> Lwt_unix.sleep 1. (*7.*)
 
     let update gstate = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
+      (*Lwt_io.printl "\n\nupdate was called!"*)
       Lwt.wrap1 send_gstate gstate
 
     (**Game state*)
@@ -291,11 +292,11 @@ module Term = struct
       > this way overlays can be rendered without becoming part of animation layers @ def time
       > still.. think of better solution?
     *)
+    let eq a a' = Anim.equal ~eq:(=) a a'
+
     let lift_anim anim_def = S.fold 
         (fun anim_acc _ -> Anim.incr_anim anim_acc) 
-        ~eq:(Anim.equal ~eq:(=))
-        anim_def
-        frames
+        ~eq anim_def frames
 
     type extra = {
       pos : float;
@@ -465,12 +466,11 @@ module Term = struct
             if f = f' then (a, f) else (Anim.incr_anim a, f') 
           ) af frames_s
             ~eq:eq_af
-        in af', S.map ~eq:(Anim.equal ~eq:(=)) fst af' 
+        in af', S.map ~eq fst af' 
 
       let lift_anim' anim = S.fix (anim, S.value frames_s) define_fixp_anim ~eq:eq_af
       *)
       
-      (*goto move into Adef?*)
       (*howto/what-to:
         . should length be modifiable on the fly? (complicates things / will reset animations in manabar)
           > no I think it should only be invisi.-buffers who's length dep. on columns
@@ -478,37 +478,73 @@ module Term = struct
           . (Ae's should both be empty and full mana-fields)
           . Ae's rule control if should be empty/full field
       *)
-      (*goo*)
-      let make_manabar =  
-        let manabar = Adef.anim_of_str "[.........]"
-            ~ae_init_mapi
-            ~ae_succ_mapi
+      (*goto >
+        . make aestetic  
+        . make just deleted mana be colored differently + blinking (> dep. on st.ex.age + st.s?)
+      *)
+      let make_manabar ~len ~mana_s ~pos_s ?(c_empty='.') ?(c_full='|') () = 
+        let len_mana = len-2 in
+        Al ([
+            Ae( { std_st with s = "[" }, None );
+            ( Adef.anim_of_str (String.make (len-2) c_empty)
+                ~ae_init_mapi:(fun _ st -> { st with c_fg = Color.i 3} )
+                ~ae_succ_mapi:(fun i st -> 
+                    let nbars = int_of_float 
+                        ((S.value mana_s) *. (float len_mana)) 
+                    in { st with 
+                         s = String.of_char 
+                             (if i <= nbars then c_full else c_empty) 
+                       }
+                  )
+                ~all_map:None
+              |> fun al -> match (S.value pos_s), al with
+              (*goto put in all_map as before, so players dynamically can change place, 
+                but do by check diff between delayed pos_s and curr pos_s (look for delay comb.) *)
+              | Right, Al (al, r) -> Al (List.rev al, r)
+              | _ -> al );
+            Ae ({ std_st with s = "]" }, None );
+          ], None)
 
-        in match (S.value G_s.p0_pos), manabar with
-        | Right, Al (manabar, rule) -> Al (List.rev manabar, rule)
-        | Left, manabar -> manabar
-
-      (*>goo use make_manabar*)
       let p0_mana_a = lift_anim [ 
-        
+          make_manabar ~len:11 
+            ~mana_s:G_s.p0_mana 
+            ~pos_s:G_s.p0_pos () ]
 
-      let p0_name_a = lift_anim [
-          Ae( std_st, Some( fun st -> 
-              { st with 
-                s = S.value G_s.p0_name;
-                c_fg = Color.i ((S.value frames_s / 10) mod 4)
-              } ))
+      let p1_mana_a = lift_anim [ 
+          make_manabar ~len:11 
+            ~mana_s:G_s.p1_mana 
+            ~pos_s:G_s.p1_pos () ]
+
+      (*goto visualize: make dep. on G_s.turn (make bold? / color? / char anim?)*)
+      let make_name ~name_s ~color = lift_anim [
+          Ae( { std_st with c_fg = color }
+            , Some( fun st -> 
+              { st with s = S.value name_s } 
+                )
+            )
         ]
-        
-      
+
+      let p0_name_a = make_name ~name_s:G_s.p0_name ~color:(Color.i 0)
+
+      let p1_name_a = make_name ~name_s:G_s.p1_name ~color:(Color.i 4)
+
+      (*goo*)
+      (*goto make depend on player position like mana etc.*)
+(*
+      let gameboard_a = lift_anim [
+          
+        ]
+*)
 
       (*<goo*)
       (*goto define rest of animation parts (plus messages) *)
 
-
       (*goto make order of anims depend on position of players*)
-      let full = S.merge (@) [] [p0_name_a]
-      (*[ (inv_buff_anim?); p0_mana_a; p0_name_a; gameboard_a; p1_name_a; p1_mana_a ]*)
+      let full = 
+        S.merge ~eq (@) [] [p0_mana_a; p0_name_a; p1_name_a; p1_mana_a] 
+        |> S.map ~eq (fun l -> [ Al( l, None ) ] ) 
+
+      (*[ (inv_buff_anim?); gameboard_a  ]*)
 
       (*howto make animation game-board 
           > gameboard: how to map blocks to enduring animations? 
@@ -538,8 +574,7 @@ module Term = struct
             `Mode_loading -> loading_anim
           | `Mode_game -> Game_anim.full
         ) app_mode_s
-      |> S.switch 
-        ~eq:(Anim.equal ~eq:(=))         
+      |> S.switch ~eq         
     (*< apparantly we need this for not failing on equality-check, 
         even though it's given at lift-time*)
 
