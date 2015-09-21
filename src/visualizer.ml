@@ -91,7 +91,7 @@ module Term = struct
               ) ["]"] (List.make len_full mana_fill) )
       |> String.concat ""
 
-    let board gstate print = 
+    let board gstate = 
       let elems = Board.list gstate.board in
       let board_str = String.concat ""
           (List.concat 
@@ -103,15 +103,15 @@ module Term = struct
                       | false -> strlst_of_elem elem.element) :: acc )
                ) elems [[sep]] )) in
       let bbuffer = String.make len_bbuffer ' ' in
-      let full = String.concat ""
-          [ str_of_pmana ~gstate len_mana P0;
-            str_of_pname ~gstate len_name P0;
-            bbuffer; board_str; bbuffer;
-            str_of_pname ~gstate len_name P1;
-            str_of_pmana ~gstate len_mana P1 ]
-      in print full
+      String.concat "" [
+        str_of_pmana ~gstate len_mana P0;
+        str_of_pname ~gstate len_name P0;
+        bbuffer; board_str; bbuffer;
+        str_of_pname ~gstate len_name P1;
+        str_of_pmana ~gstate len_mana P1;
+      ]
 
-    let update gstate = board gstate print_endline
+    let update gstate = print_endline (board gstate)
 
     let loading ~gstate ~wait_for = 
       let open Lwt in
@@ -126,10 +126,9 @@ module Term = struct
 
       let suggest_len = suggest_len
 
-      let update gstate = board gstate (fun s ->
-          Sys.command "tput cuu1" |> ignore;
-          Lwt_io.printl s
-        )
+      let update gstate = 
+        Sys.command "tput cuu1" |> ignore;
+        Lwt_io.printl (board gstate)
 
       let loading ~gstate ~wait_for = 
         let open Lwt in
@@ -323,6 +322,14 @@ module Term = struct
     }
 
     module Color = struct 
+
+      let inverse (r,g,b) = (255-r, 255-g, 255-b)
+
+      let rgb (r,g,b) = LTerm_style.rgb r g b
+
+      let get_rgb_exc = function 
+        | LTerm_style.RGB (r, g ,b) -> (r, g, b) 
+        | _ -> failwith "Visualizer: Sorry - you tried to get RGB values from a non-RGB value."
 
       let lerp (r,g,b) (r',g',b') r1 r2 v = 
         let f,i = float, int_of_float in
@@ -545,8 +552,23 @@ module Term = struct
       (*goto make depend on player position like mana etc.*)
       (*goo*)
       let gameboard_a = lift_anim [
-          
-          
+          let board = S.value G_s.board in
+          (** should define the initial state + register animation functions inside state, to be applied each frame*)
+          let show_new_elem_state = function
+            (*goto save animation closures in list in state? -> then they can get reset and extended dynamically
+              > then we need a new equals function for state that doesn't compare functions *)
+            (*goto define player color in gamestate? >+ make sign. over it (used here and in pX_name_a ) 
+              > depend on this here
+            *)
+            | { killed = true } -> { std_st with s = "###"; c_fg = Color.rgb (94, 229, 229) } 
+            | _ -> assert false (*goo*) 
+          in 
+          Al ( 
+            List.map (fun e -> 
+                Ae (show_new_elem_state e, None)
+              ) (Board.list board)
+            , None
+          )
         ]
 
       (*<goo*)
