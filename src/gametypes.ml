@@ -86,12 +86,6 @@ type direction = Left | Right
 
 type element_wrap_active = element_wrap
 
-type element_action = 
-  | Kill of element_wrap_active * element_wrap
-  | Application of element_wrap_active * element_wrap
-  | At_opponent of element_wrap
-  | At_home of element_wrap
-
 type board_action =
   | Move_all_and_add of player_id * direction * element_wrap
   | Move_all of player_id * direction
@@ -99,6 +93,12 @@ type board_action =
 type board_move_conseq = 
   | Jumpover of element_wrap_active * element_wrap
   | Out_of_bounds of direction * element_wrap 
+
+type element_action = 
+  | Kill of element_wrap_active * element_wrap
+  | Application of element_wrap_active * element_wrap
+  | At_opponent of element_wrap
+  | At_home of element_wrap
 
 (*
 type 'a tmp = 
