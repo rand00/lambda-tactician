@@ -56,7 +56,8 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
       let actions = List.filter_map 
           (Rules.conseq_to_action ~gstate)
           conseqs in
-      (*goto use Lwt_list.filter_map_p (is order important here?)*)
+      (*<goto send this to Visualizer*)
+      (*<goto use Lwt_list.filter_map_p (is order important here?)*)
 
       let board = List.fold_left 
           Board.eval_action 
@@ -67,19 +68,17 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
         . use Lwt_list.fold_right_p (is order important?)
       *)
 
-      let gstate = 
-        Rules.update_player_mana ~gstate
-          (`From_actions actions) 
-        |> Rules.set_possible_winner 
-        |> fun gstate -> { gstate with board } in
+      let gstate = Rules.( 
+          update_player_mana ~gstate (`From_actions actions) 
+          |> set_possible_winner 
+        ) |> fun gstate -> { gstate with board } in
       (*<goto just wrap in lwt.return? (or use lwt_list inside)*)
 
-      let%lwt () = Visualize.update gstate in
+      let%lwt () = Visualize.update ~with_actions:actions gstate in
 
       let board = 
-        Board.remove_killed_elems board
-        |> Board.increment_time 
-      (*<goto just wrap in lwt.return? (or use lwt_list inside)*)
+        Board.(increment_time % remove_killed_elems) 
+          board
 
       in Lwt.return 
         { gstate with turn = (Player.opposite gstate.turn); board }
@@ -94,6 +93,7 @@ let rec gameturn gstate ~rules ~visualizer ~synth =
           [ (match gstate.turn with 
                 | P0 -> ("panfrom", `I (-1)) 
                 | P1 | PNone -> "panfrom", `I 1) ] 
+          (*<goto abstract away into some module: be declarative in this mod.*)
       in
       Rules.apply_punishment illegal_elem ~gstate
       |> Rules.set_possible_winner
