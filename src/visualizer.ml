@@ -22,7 +22,7 @@ open Gametypes
 
 module type S = sig 
   val suggest_len : unit -> int
-  val update : Gstate.t -> unit Lwt.t
+  val update : ?with_actions:Gametypes.element_action list -> Gstate.t -> unit Lwt.t
   val loading : gstate:Gstate.t -> wait_for:'a Lwt.t -> unit Lwt.t 
 end
 
@@ -111,7 +111,7 @@ module Term = struct
         str_of_pmana ~gstate len_mana P1;
       ]
 
-    let update gstate = print_endline (board gstate)
+    let update ?with_actions gstate = print_endline (board gstate)
 
     let loading ~gstate ~wait_for = 
       let open Lwt in
@@ -209,7 +209,7 @@ module Term = struct
       send_app_mode Gstate.(`Mode_loading);
       wait_for >>= fun _ -> Lwt_unix.sleep 1. (*7.*)
 
-    let update gstate = 
+    let update ?with_actions gstate = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
       (*Lwt_io.printl "\n\nupdate was called!"*)
@@ -552,21 +552,25 @@ module Term = struct
       (*goto make depend on player position like mana etc.*)
       (*goo*)
       let gameboard_a = lift_anim [
-          let board = S.value G_s.board in
-          (** should define the initial state + register animation functions inside state, to be applied each frame*)
+          (** > should define the initial state + register animation functions inside state, 
+              to be applied at each frame*)
           let show_new_elem_state = function
-            (*goto save animation closures in list in state? -> then they can get reset and extended dynamically
-              > then we need a new equals function for state that doesn't compare functions *)
-            (*goto define player color in gamestate? >+ make sign. over it (used here and in pX_name_a ) 
-              > depend on this here
+            (*goto save animation closures in list in state? 
+              -> then they can get reset and extended dynamically
+                > then we need a new equals function for state that doesn't compare functions *)
+            (*goto define player color in gamestate? >+ make sign. over it 
+              (used here and in pX_name_a ) 
+                > depend on this here
             *)
+            (*>goto make a helper function that blinks a closure? (that get's n times called as arg)
+              of colors at a rate *)
             | { killed = true } -> { std_st with s = "###"; c_fg = Color.rgb (94, 229, 229) } 
             | _ -> assert false (*goo*) 
           in 
           Al ( 
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
-              ) (Board.list board)
+              ) (Board.list (S.value G_s.board))
             , None
           )
         ]
