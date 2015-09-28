@@ -44,24 +44,17 @@ let find_pos e board =
 let set_killed e board = 
   List.fold_right (fun e' acc -> 
       if e.id = e'.id then 
-        { e' with killed = true } :: acc
+        { e' with situation = Killed } :: acc
       else e' :: acc ) 
     board
     []
-
-(**not in use*)
-let set_killed_at pos = 
-  List.modify_at pos (fun e -> { e with killed = true } ) 
 
 let set_applied e lambd_ret board = 
   List.fold_right (fun e' acc -> 
       if e.id = e'.id then 
         { e' with 
           element = Symbol lambd_ret;
-          visual_state = { 
-            e.visual_state with
-            applied = (true, 0);
-          };
+          situation = Applied 0
         } :: acc
       else e' :: acc ) 
     board
@@ -80,12 +73,10 @@ let eval_action board = function
 
 let increment_time board = List.fold_right (fun e acc -> 
     { e with 
-      visual_state = {
-        age = succ e.visual_state.age;
-        applied = 
-          let (is_app, since) as v = e.visual_state.applied in
-          if is_app then is_app, succ since else v
-      }
+      age = succ e.age;
+      situation = match e.situation with
+        | Normal | Killed as sit -> sit
+        | Applied since -> Applied (succ since)
     } :: acc
   ) board []
 
@@ -143,7 +134,7 @@ let move_all_and_add direction elem board =
 
 let remove_killed_elems = 
   List.map (function 
-      | { killed = true; id } -> { empty_wrap with id }
+      | { situation = Killed; id } -> { empty_wrap with id }
       | other -> other) 
   
 

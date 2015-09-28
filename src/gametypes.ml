@@ -44,17 +44,17 @@ let element_to_str = function
 (* # of gameturns something has been applied*)
 type ngameturns = int
 
-type element_visual_state = {
-  applied : bool * ngameturns;
-  age : ngameturns;
-}
+type element_situation = 
+  | Applied of ngameturns
+  | Killed 
+  | Normal
 
 type element_wrap = {
   owner : player_id;
   element : element;
   mana_cost : float;
-  killed : bool;
-  visual_state : element_visual_state;
+  situation : element_situation;
+  age : ngameturns;
   id : int; (*autoincremented by 'empty_wrap_init' >*)
 }
 
@@ -64,12 +64,9 @@ let empty_wrap = {
   owner = PNone; 
   element = Empty; 
   mana_cost = 0.; 
-  killed = false;
+  situation = Normal;
   (*>goto and check if this is used at all when V.gameboard is implmented*)
-  visual_state = {
-    applied = (false, 0);
-    age = 0;
-  };
+  age = 0;
   id = 0
 }
 
