@@ -59,15 +59,13 @@ type element_wrap = {
 }
 
 let element_i_init = ref 0
-let incr_ret_id_init () = let i = !element_i_init in incr element_i_init; i
-let element_i_succ = ref 100
-let incr_ret_id () = let i = !element_i_succ in incr element_i_succ; i
 
 let empty_wrap = {
   owner = PNone; 
   element = Empty; 
   mana_cost = 0.; 
   killed = false;
+  (*>goto and check if this is used at all when V.gameboard is implmented*)
   visual_state = {
     applied = (false, 0);
     age = 0;
