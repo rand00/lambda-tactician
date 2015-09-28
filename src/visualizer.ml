@@ -169,23 +169,6 @@ module Term = struct
 
     let frames, send_frame = E.create ()
     let frames_s = S.hold 0 frames
-  (*
-    let print_frame = 
-      let s = S.map (Lwt_io.printf "frame: %d\n\n") frames_s in
-      let _ = S.keep s in s
-   *)
-
-    (*howto; map gameboard to set of signals (animations) 
-      > but where does the animations get their updates from? 
-         > a mapped 'update' over Gstate.t -> diff signals (of anims)
-           , later collected together in a full signal (of a gameboard anim collection)
-             > eval this to Lambdaterm printable type
-        . how are new animations initiated?
-          > are they just statically defined closures acting on board/gstate? 
-            > or can you add new animations to the graph? (one would need a recursive
-              animation definition? -> we already have! see constructor Al who's rule can 
-              add new animations inside list; and rule can depend on some signal! (with S.value)
-    *)
 
     let app_mode, send_app_mode = E.create ()
 
@@ -195,7 +178,6 @@ module Term = struct
       let rec aux n = 
         let () = send_frame n in
         Lwt_unix.sleep 0.04 
-        (*>> Lwt_io.printf "\nframe from thread: %d \t first update: %b\n\n" n !first_update*)
         >> aux (if n = 1000 then 0 else succ n)
       in 
       if !first_update then (
@@ -213,7 +195,6 @@ module Term = struct
     let update ?with_actions gstate = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
-      (*Lwt_io.printl "\n\nupdate was called!"*)
       Lwt.wrap1 send_actions with_actions
       >> Lwt.wrap1 send_gstate gstate
 
@@ -279,24 +260,15 @@ module Term = struct
           let board = E.map (fun {board} -> board) gstate
           in S.hold (Board.make 2) board
 
-      (*>goto remove when not used*)
-      let frame_at_last_update = S.map (fun _ -> S.value frames_s) board
-
-      let board_updated = Lwt_mvar.create_empty ()
-
       let board_updated_ref = ref false
 
-      let rec poll_thread thread = match Lwt.poll thread with
+      (*goto move - doesn't belong here*)
+      let rec loop_poll_thread thread = match Lwt.poll thread with
         | Some x -> x
-        | None -> poll_thread thread
+        | None -> loop_poll_thread thread
 
       let set_updated = 
-        S.trace (fun _ -> 
-            let _ = 
-              Lwt_mvar.put board_updated ()
-              >> Lwt_io.printf "\n\n\nput mvar! (frame: %d)\n\n" (S.value frames_s) in
-            board_updated_ref := true
-          ) board
+        S.trace (fun _ -> board_updated_ref := true) board
 
     end
 
@@ -307,10 +279,6 @@ module Term = struct
 
     let eq a a' = Anim.equal ~eq:(=) a a'
 
-    (*goto possibly extend this function with a non-changing fold over sign messages
-      > this way overlays can be rendered without becoming part of animation layers @ def time
-      > still.. think of better solution?
-    *)
     let lift_anim anim_def = S.fold ~eq 
         (fun anim_acc _ -> Anim.incr_anim anim_acc) 
         anim_def frames
@@ -333,7 +301,6 @@ module Term = struct
       c_fg : color;
       c_bg : color;
       ex : extra;
-      (*  prev : 'a option;*)
     }
 
     let std_st = {
@@ -384,35 +351,15 @@ module Term = struct
 
     (*goto (in general) move helper modules somewhere else?*)
 
-    let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> id x
+    let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> x
 
-
-    (*goto this is not good style... find other solution*)
+    (**>!! Can only be used at one place in the code... :o 
+       but in some ways better than running over several frames in a loose buffer.
+       This is a consequence of the lower non-frp animation-system nested inside and 
+       depending on the frp. *)
     let at_board_update f x = 
-      let fr = S.value frames_s
-      and fr_lastupd = S.value G_s.frame_at_last_update
-      and buffer = 5
-      in 
-      if fr > fr_lastupd -buffer && fr < fr_lastupd +buffer then
-        ( Lwt_io.print "\n\ngot run!";
-          f x )
-      else x
-
-    (*not working :/ - it's because the first thread that is made to take the 
-      non-updated mvar actually blocks, and gets the value when present... 
-      this way all the subsequent calls will never get a full mvar 
-    *)
-    let at_board_update' f x = 
-      match Lwt.poll (Lwt_mvar.take G_s.board_updated) with
-      | Some () -> 
-        let _ = Lwt_io.printf "\n\nboard updated! (frame: %d)\n\n" (S.value frames_s)
-        in f x
-      | None -> x
-
-    let at_board_update'' f x = 
       match !G_s.board_updated_ref with
       | true -> 
-        let  _ = Lwt_io.printf "\n\nboard updated! (frame: %d)\n\n" (S.value frames_s) in
         let () = G_s.board_updated_ref := false
         in f x
       | false -> x
@@ -468,7 +415,7 @@ module Term = struct
         |> int_of_float 
       in
       let bg = 
-        let c1 = (160, 158, 90)
+        let c1 = (160, 158, 90) (*goto save all colors used in Colors to be reused*)
         and c2 = (88, 227, 171) 
 (*
         let c1 = (0, 0, 200)
@@ -656,27 +603,33 @@ module Term = struct
               | Ae (st, _) -> st.id = id
               | Al (al, _)  -> false
             ) in
-          List.map (fun e -> 
-              Ae (show_new_elem_state e, None)
-            ) board
-          (*goto 
-            what to:
-              . (done) ONLY MAP IF BOARD+/ACTIONS HAVE CHANGED
-              . (done) construct new st list (with show_new_elem) from new board state
-              . then take old rules of old positions of moved Ae's and optionally
-                compose new rules with these (dep. on elem-state /+ (primarily actions))
-                > (if not actions, then save actions info in elem-state)
-                  . but actions give more info - also shows which symbol was applied to
-                . > do this by elem-id (not pos)
-                > I could use elem_wrap state for choosing to go through actions
-          *)
-          (*<goo*) 
+          let fill_ae = Ae ({std_st with s = "|"}, None)
+          in fill_ae :: 
+             (List.map (fun e -> [
+                    Ae (show_new_elem_state e, None);
+                    fill_ae;
+                  ]
+                ) board
+              |> List.flatten)
+
+            (*goto 
+               what to:
+                 . (done) ONLY MAP IF BOARD+/ACTIONS HAVE CHANGED
+                 . (done) construct new st list (with show_new_elem) from new board state
+                 . then take old rules of old positions of moved Ae's and optionally
+                   compose new rules with these (dep. on elem-state /+ (primarily actions))
+                   > (if not actions, then save actions info in elem-state)
+                     . but actions give more info - also shows which symbol was applied to
+                   . > do this by elem-id (not pos)
+                   > I could use elem_wrap state for choosing to go through actions
+             *)
+             (*<goo*) 
         in 
         lift_anim [ (Al ( 
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
-          , Some (at_board_update'' succ_map)))
+          , Some (at_board_update succ_map)))
           ]
 
 
@@ -715,8 +668,6 @@ module Term = struct
 
     (**Rendering*)
 
-    (*>gomaybe Anim.eval should be done more efficiently with some kind of fold instead*)
-    (*in reality this signal is the flattened representation of the animation layers*)
     let anim_layers = LTerm_text.( 
         visu_switcher >|~ (fun l -> 
             Anim.eval l
@@ -743,25 +694,6 @@ module Term = struct
         LTerm_draw.context matrix dim
       ) render_width draw_matrix
 
-(* We don't need this ... 
-    let snoc l e = e :: l (*reverse args of 'cons'*)
-
-    let cropped_anim_layers = S.l2 (fun max_width layers -> 
-        List.fold_right (fun layer acc -> 
-            List.fold_left (fun (pos_acc, res_acc) ({s; i} as st) ->
-                let curr_len = pos_acc + i + (Zed_utf8.length s) in
-                if curr_len > max_width then 
-                  (curr_len, res_acc)
-                else 
-                  (curr_len, st::res_acc)
-              ) (0, []) layer
-            |> snd 
-            |> List.rev 
-            |> snoc acc
-          ) layers []
-      ) render_width anim_layers 
-*)
-
     let visualize = 
       S.l3 (fun layers context matrix -> 
           LTerm_draw.clear context;
@@ -781,7 +713,6 @@ module Term = struct
     let _ = S.keep visualize
 
   end
-
 
 end
 
