@@ -53,27 +53,29 @@ let set_killed e board =
 let set_killed_at pos = 
   List.modify_at pos (fun e -> { e with killed = true } ) 
 
+let set_applied e lambd_ret board = 
+  List.fold_right (fun e' acc -> 
+      if e.id = e'.id then 
+        { e' with 
+          element = Symbol lambd_ret;
+          visual_state = { 
+            e.visual_state with
+            applied = (true, 0);
+          };
+        } :: acc
+      else e' :: acc ) 
+    board
+    []
+
 let eval_action board = function
   | Kill (killer_wrap, killed_wrap) -> 
     set_killed killed_wrap board
-
   | Application (lambda_wrap, value_wrap) ->
     (*not checking for equal symbols, as this is a job for rules*)
     let _, lamb_out = get_lambda lambda_wrap.element in
-    set_killed value_wrap board
-    |> List.fold_left (fun acc e -> 
-        (*Printf.printf "e.id = '%d' & lambda_wrap.id = '%d'\n" e.id lambda_wrap.id;*)
-        if e.id = lambda_wrap.id then 
-          { e with 
-            element = Symbol lamb_out;
-            visual_state = { 
-              e.visual_state with
-              applied = (true, 0);
-            };
-          } :: acc 
-        else e :: acc)
-      []
-         
+    board 
+    |> set_killed value_wrap 
+    |> set_applied lambda_wrap lamb_out 
   | At_home _ | At_opponent _ -> board
 
 let increment_time board = List.fold_right (fun e acc -> 
