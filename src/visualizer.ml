@@ -126,7 +126,7 @@ module Term = struct
 
       let suggest_len = suggest_len
 
-      let update gstate = 
+      let update ?with_actions gstate = 
         Sys.command "tput cuu1" |> ignore;
         Lwt_io.printl (board gstate)
 
@@ -165,6 +165,7 @@ module Term = struct
     let term = Iinterp.Term.t
 
     let gstate, send_gstate = E.create ()
+    let actions_s, send_actions = S.create None
 
     let frames, send_frame = E.create ()
     let frames_s = S.hold 0 frames
@@ -213,7 +214,8 @@ module Term = struct
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_game);
       (*Lwt_io.printl "\n\nupdate was called!"*)
-      Lwt.wrap1 send_gstate gstate
+      Lwt.wrap1 send_actions with_actions
+      >> Lwt.wrap1 send_gstate gstate
 
     (**Game state*)
 
@@ -300,9 +302,11 @@ module Term = struct
     type extra = {
       pos : float;
       age : int;
+      s_orig : string;
     }
 
-    let std_ex = { pos = 0.; age = 0 }
+    (*manually updated*)
+    let std_ex = { pos = 0.; age = 0; s_orig = "" }
 
     type state = {
       s : string;
@@ -345,6 +349,15 @@ module Term = struct
         )
         
       let i = LTerm_style.index
+
+      (**Color definitions for output*)
+      let p0 = i 0
+      let p1 = i 4
+
+      let of_player = function
+        | P0 -> p0
+        | P1 -> p1
+        | PNone -> LTerm_style.default
 
     end
 
@@ -531,9 +544,9 @@ module Term = struct
             )
         ]
 
-      let p0_name_a = make_name ~name_s:G_s.p0_name ~color:(Color.i 0)
+      let p0_name_a = make_name ~name_s:G_s.p0_name ~color:(Color.p0)
 
-      let p1_name_a = make_name ~name_s:G_s.p1_name ~color:(Color.i 4)
+      let p1_name_a = make_name ~name_s:G_s.p1_name ~color:(Color.p1)
 
       (*howto1 make animation game-board 
           > gameboard: how to map blocks to enduring animations? 
@@ -543,11 +556,7 @@ module Term = struct
                 . maps correct anim-rules to moved-around blocks ((Al, block-list) -> Al)
                   . (block-types are saved in animation state? or find better sol.?)
                   > so it's an Al-rule?
-      *)
-      (*howto2> 
-        . make an Al-rule that links old blocks with some id with new blocks position
-          > this way anims of blocks can follow a block 
-            > make some system where rules gets reset/overrided at certain state events
+                  > reset/override rules at certain state events
       *)
       (*goto make depend on player position like mana etc.*)
       (*goo*)
@@ -564,14 +573,52 @@ module Term = struct
             *)
             (*>goto make a helper function that blinks a closure? (that get's n times called as arg)
               of colors at a rate *)
-            | { killed = true } -> { std_st with s = "###"; c_fg = Color.rgb (94, 229, 229) } 
-            | _ -> assert false (*goo*) 
+            | { killed = true } -> 
+              let s = "###" 
+              in { 
+                std_st with 
+                s; 
+                c_fg = Color.rgb (94, 229, 229);
+                ex = { std_st.ex with s_orig = s };
+              } 
+            | { element = Symbol sym; owner } -> 
+              let s = " "^(Gametypes.symbol_to_str sym)^" "
+              in { 
+                std_st with 
+                s;
+                c_fg = Color.of_player owner;
+                ex = { std_st.ex with s_orig = s };            
+              }
+            | { element = Lambda (sym, sym'); owner } -> 
+              let s = Gametypes.((symbol_to_str sym)^"."^(symbol_to_str sym'))
+              in { 
+                std_st with 
+                s;
+                c_fg = Color.of_player owner;
+                ex = { std_st.ex with s_orig = s };            
+              }
+            | _ -> std_st
+          in 
+          let succ_map = List.map (function 
+              | Ae (st, rule_opt) -> 
+            (*goto 
+              . save board as local val 
+              . map over .....
+              what to:
+                . construct new st list (with show_new_elem) from new board state
+                . then take old rules of old positions of moved Ae's and optionally
+                  compose new rules with these (dep. on elem-state /+ (primarily actions))
+                  > (if not actions, then save actions info in elem-state)
+                    . but actions give more info - also shows which symbol was applied to
+                  . > do this by elem-id (not pos)
+            *)
+          (*<goo*) 
           in 
           Al ( 
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
-            , None
+            , Some succ_map
           )
         ]
 
@@ -580,7 +627,7 @@ module Term = struct
 
       (*goto make order of anims depend on position of players*)
       let full = 
-        S.merge ~eq (@) [] [p0_mana_a; p0_name_a; p1_name_a; p1_mana_a] 
+        S.merge ~eq (@) [] [p0_mana_a; p0_name_a; gameboard_a; p1_name_a; p1_mana_a] 
         |> S.map ~eq (fun l -> [ Al( l, None ) ] ) 
 
       (*[ (inv_buff_anim?); gameboard_a  ]*)
