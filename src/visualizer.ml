@@ -96,11 +96,11 @@ module Term = struct
       let board_str = String.concat ""
           (List.concat 
              ((List.fold_right (fun elem acc -> 
-                  [sep] :: (match elem.killed with
-                      | true  -> ( match elem.element with
+                  [sep] :: (match elem.situation with
+                      | Killed -> ( match elem.element with
                           | Lambda _ -> ["###"]
                           | _ -> ["_#_"] )
-                      | false -> strlst_of_elem elem.element) :: acc )
+                      | _ -> strlst_of_elem elem.element) :: acc )
                ) elems [[sep]] )) in
       let bbuffer = String.make len_bbuffer ' ' in
       String.concat "" [
@@ -279,8 +279,24 @@ module Term = struct
           let board = E.map (fun {board} -> board) gstate
           in S.hold (Board.make 2) board
 
+      (*>goto remove when not used*)
+      let frame_at_last_update = S.map (fun _ -> S.value frames_s) board
 
-      (*goto do turn, board, position*)
+      let board_updated = Lwt_mvar.create_empty ()
+
+      let board_updated_ref = ref false
+
+      let rec poll_thread thread = match Lwt.poll thread with
+        | Some x -> x
+        | None -> poll_thread thread
+
+      let set_updated = 
+        S.trace (fun _ -> 
+            let _ = 
+              Lwt_mvar.put board_updated ()
+              >> Lwt_io.printf "\n\n\nput mvar! (frame: %d)\n\n" (S.value frames_s) in
+            board_updated_ref := true
+          ) board
 
     end
 
@@ -299,14 +315,17 @@ module Term = struct
         (fun anim_acc _ -> Anim.incr_anim anim_acc) 
         anim_def frames
 
+    (*>goto maybe think of some 'extra'-sumtype instead of all Ae's holding 
+      all kinds of state*)
     type extra = {
       pos : float;
       age : int;
       s_orig : string;
+      blk_id : int;
     }
 
     (*manually updated*)
-    let std_ex = { pos = 0.; age = 0; s_orig = "" }
+    let std_ex = { pos = 0.; age = 0; s_orig = ""; blk_id = 0 }
 
     type state = {
       s : string;
@@ -366,6 +385,37 @@ module Term = struct
     (*goto (in general) move helper modules somewhere else?*)
 
     let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> id x
+
+
+    (*goto this is not good style... find other solution*)
+    let at_board_update f x = 
+      let fr = S.value frames_s
+      and fr_lastupd = S.value G_s.frame_at_last_update
+      and buffer = 5
+      in 
+      if fr > fr_lastupd -buffer && fr < fr_lastupd +buffer then
+        ( Lwt_io.print "\n\ngot run!";
+          f x )
+      else x
+
+    (*not working :/ - it's because the first thread that is made to take the 
+      non-updated mvar actually blocks, and gets the value when present... 
+      this way all the subsequent calls will never get a full mvar 
+    *)
+    let at_board_update' f x = 
+      match Lwt.poll (Lwt_mvar.take G_s.board_updated) with
+      | Some () -> 
+        let _ = Lwt_io.printf "\n\nboard updated! (frame: %d)\n\n" (S.value frames_s)
+        in f x
+      | None -> x
+
+    let at_board_update'' f x = 
+      match !G_s.board_updated_ref with
+      | true -> 
+        let  _ = Lwt_io.printf "\n\nboard updated! (frame: %d)\n\n" (S.value frames_s) in
+        let () = G_s.board_updated_ref := false
+        in f x
+      | false -> x
 
     module Ae = struct 
 
@@ -559,68 +609,76 @@ module Term = struct
                   > reset/override rules at certain state events
       *)
       (*goto make depend on player position like mana etc.*)
-      (*goo*)
-      let gameboard_a = lift_anim [
+      let gameboard_a = 
           (** > should define the initial state + register animation functions inside state, 
               to be applied at each frame*)
-          let show_new_elem_state = function
-            (*goto save animation closures in list in state? 
-              -> then they can get reset and extended dynamically
-                > then we need a new equals function for state that doesn't compare functions *)
-            (*goto define player color in gamestate? >+ make sign. over it 
-              (used here and in pX_name_a ) 
-                > depend on this here
-            *)
-            (*>goto make a helper function that blinks a closure? (that get's n times called as arg)
-              of colors at a rate *)
-            | { killed = true } -> 
-              let s = "###" 
-              in { 
-                std_st with 
-                s; 
-                c_fg = Color.rgb (94, 229, 229);
-                ex = { std_st.ex with s_orig = s };
-              } 
-            | { element = Symbol sym; owner } -> 
-              let s = " "^(Gametypes.symbol_to_str sym)^" "
-              in { 
-                std_st with 
-                s;
-                c_fg = Color.of_player owner;
-                ex = { std_st.ex with s_orig = s };            
-              }
-            | { element = Lambda (sym, sym'); owner } -> 
-              let s = Gametypes.((symbol_to_str sym)^"."^(symbol_to_str sym'))
-              in { 
-                std_st with 
-                s;
-                c_fg = Color.of_player owner;
-                ex = { std_st.ex with s_orig = s };            
-              }
-            | _ -> std_st
-          in 
-          let succ_map = List.map (function 
-              | Ae (st, rule_opt) -> 
-            (*goto 
-              . save board as local val 
-              . map over .....
-              what to:
-                . construct new st list (with show_new_elem) from new board state
-                . then take old rules of old positions of moved Ae's and optionally
-                  compose new rules with these (dep. on elem-state /+ (primarily actions))
-                  > (if not actions, then save actions info in elem-state)
-                    . but actions give more info - also shows which symbol was applied to
-                  . > do this by elem-id (not pos)
-            *)
+        let show_new_elem_state = function
+          (*goto save animation closures in list in state? 
+            -> then they can get reset and extended dynamically
+              > then we need a new equals function for state that doesn't compare functions *)
+          (*goto define player color in gamestate? >+ make sign. over it 
+            (used here and in pX_name_a ) 
+              > depend on this here
+          *)
+          (*>goto make a helper function that blinks a closure? (that get's n times called as arg)
+            of colors at a rate *)
+          | { situation = Killed } as elem -> 
+            let s = "###" 
+            in { std_st with 
+                 s; 
+                 c_fg = Color.rgb (94, 229, 229);
+                 ex = { std_st.ex with s_orig = s; blk_id = elem.id };
+               } 
+          | { element = Symbol sym; owner } as elem -> 
+            let s = " "^(Gametypes.symbol_to_str sym)^" "
+            in { std_st with 
+                 s;
+                 c_fg = Color.of_player owner;
+                 ex = { std_st.ex with s_orig = s; blk_id = elem.id };            
+               }
+          | { element = Lambda (sym, sym'); owner } as elem -> 
+            let s = Gametypes.((symbol_to_str sym)^"."^(symbol_to_str sym'))
+            in { std_st with 
+                 s;
+                 c_fg = Color.of_player owner;
+                 ex = { std_st.ex with s_orig = s; blk_id = elem.id };
+               }
+          | { element = Empty } as elem -> 
+            let s = "   "
+            in { std_st with 
+              s; 
+              ex = { std_st.ex with s_orig = s; blk_id = elem.id };
+            }
+        in 
+        let succ_map al = 
+          let board = Board.list (S.value G_s.board) in
+          let rec find_id id = List.find (function 
+              | Ae (st, _) -> st.id = id
+              | Al (al, _)  -> false
+            ) in
+          List.map (fun e -> 
+              Ae (show_new_elem_state e, None)
+            ) board
+          (*goto 
+            what to:
+              . (done) ONLY MAP IF BOARD+/ACTIONS HAVE CHANGED
+              . (done) construct new st list (with show_new_elem) from new board state
+              . then take old rules of old positions of moved Ae's and optionally
+                compose new rules with these (dep. on elem-state /+ (primarily actions))
+                > (if not actions, then save actions info in elem-state)
+                  . but actions give more info - also shows which symbol was applied to
+                . > do this by elem-id (not pos)
+                > I could use elem_wrap state for choosing to go through actions
+          *)
           (*<goo*) 
-          in 
-          Al ( 
+        in 
+        lift_anim [ (Al ( 
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
-            , Some succ_map
-          )
-        ]
+          , Some (at_board_update'' succ_map)))
+          ]
+
 
       (*<goo*)
       (*goto define rest of animation parts (plus messages) *)
