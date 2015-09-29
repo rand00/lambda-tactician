@@ -351,18 +351,68 @@ module Term = struct
 
     (*goto (in general) move helper modules somewhere else?*)
 
-    let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> x
+    module S_lower = struct 
 
-    (**>!! Can only be used at one place in the code... :o 
-       but in some ways better than running over several frames in a loose buffer.
-       This is a consequence of the lower non-frp animation-system nested inside and 
-       depending on the frp. *)
-    let at_board_update f x = 
-      match !G_s.board_updated_ref with
-      | true -> 
-        let () = G_s.board_updated_ref := false
-        in f x
-      | false -> x
+      let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> x
+      
+      (**>!! Can only be used at one place in the code... :o 
+         but in some ways better than running over several frames in a loose buffer.
+         This is a consequence of the lower non-frp animation-system nested inside and 
+         depending on the frp. *)
+      (*goto remove if next version works*)
+      let at_board_update_deprec f x = 
+        match !G_s.board_updated_ref with
+        | true -> 
+          let () = G_s.board_updated_ref := false
+          in f x
+        | false -> x
+
+      module Is_updated : sig 
+
+        type caller_id
+        val new_caller_id : unit -> caller_id
+        val make : unit -> caller_id -> bool
+        
+      end = struct 
+
+        type caller_id = int
+
+        let new_caller_id = 
+          let id = ref 0 in
+          fun () -> 
+            let ret = !id in
+            let _ = incr id 
+            in ret
+
+        let make () = 
+          let callers = ref Set.empty in
+          fun (id:caller_id) -> 
+            if Set.mem id !callers then false else
+              let () = callers := Set.add id !callers
+              in true
+
+      end
+
+      (*goto add some eq func that makes sense to following sign.'s*)
+      let board_updated = S.map 
+          (fun _ -> Is_updated.make ())
+          G_s.board
+
+      (*goo>*)
+      (**Generates a new caller id, before returning a function*)
+      (*goto is this generative behaviour good enough style?*)
+      let at_board_update () = 
+        let id = Is_updated.new_caller_id () in
+        fun f x -> 
+          if (S.value board_updated) id then f x else x
+
+      let at_update sign = 
+        let is_updated = S.map (fun _ -> Is_updated.make ()) sign in
+        let id = Is_updated.new_caller_id () in
+        fun f x -> 
+          if (S.value is_updated) id then f x else x
+
+    end
 
     module Ae = struct 
 
@@ -444,7 +494,7 @@ module Term = struct
               ~ae_init_mapi:(fun i st -> match i with 
                   | 0 -> { st with i = outer_space s0; c_fg = Color.i 3 }
                   | _ -> { st with c_fg = Color.i 3 } )
-              ~ae_succ_mapi:(fun i -> (each each_n (fun st -> match i with 
+              ~ae_succ_mapi:(fun i -> (S_lower.each each_n (fun st -> match i with 
                   | 0 -> { st with 
                            i = if st.ex.age < max_age then 
                                st.i - ((String.length s0) + 1) 
@@ -459,7 +509,7 @@ module Term = struct
               ~ae_init_mapi:(fun i st -> match i with 
                   | 0 -> { st with i = space_between; c_fg = Color.i 3 }
                   | _ -> { st with c_fg = Color.i 3 } )
-              ~ae_succ_mapi:(fun i -> (each each_n (fun st -> match i with 
+              ~ae_succ_mapi:(fun i -> (S_lower.each each_n (fun st -> match i with 
                   | 0 -> st
                   | _ -> { st with 
                            i = if st.ex.age < max_age then succ st.i else st.i;
@@ -629,7 +679,7 @@ module Term = struct
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
-          , Some (at_board_update succ_map)))
+          , Some (S_lower.at_board_update () succ_map)))
           ]
 
 
@@ -662,9 +712,6 @@ module Term = struct
           | `Mode_game -> Game_anim.full
         ) app_mode_s
       |> S.switch ~eq         
-    (*< apparantly we need this for not failing on equality-check, 
-        even though it's given at lift-time*)
-
 
     (**Rendering*)
 
