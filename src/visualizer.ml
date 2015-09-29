@@ -260,17 +260,11 @@ module Term = struct
           let board = E.map (fun {board} -> board) gstate
           in S.hold (Board.make 2) board
 
-      let board_updated_ref = ref false
-
-      (*goto move - doesn't belong here*)
-      let rec loop_poll_thread thread = match Lwt.poll thread with
-        | Some x -> x
-        | None -> loop_poll_thread thread
-
-      let set_updated = 
-        S.trace (fun _ -> board_updated_ref := true) board
-
     end
+
+    let rec loop_poll_thread thread = match Lwt.poll thread with
+      | Some x -> x
+      | None -> loop_poll_thread thread
 
     (**Animations*)
 
@@ -355,18 +349,6 @@ module Term = struct
 
       let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> x
       
-      (**>!! Can only be used at one place in the code... :o 
-         but in some ways better than running over several frames in a loose buffer.
-         This is a consequence of the lower non-frp animation-system nested inside and 
-         depending on the frp. *)
-      (*goto remove if next version works*)
-      let at_board_update_deprec f x = 
-        match !G_s.board_updated_ref with
-        | true -> 
-          let () = G_s.board_updated_ref := false
-          in f x
-        | false -> x
-
       module Is_updated : sig 
 
         type caller_id
@@ -393,21 +375,20 @@ module Term = struct
 
       end
 
-      (*goto add some eq func that makes sense to following sign.'s*)
-      let board_updated = S.map 
+      let eq_never _ _ = false
+
+      let board_updated = S.map ~eq:eq_never
           (fun _ -> Is_updated.make ())
           G_s.board
 
-      (*goo>*)
       (**Generates a new caller id, before returning a function*)
-      (*goto is this generative behaviour good enough style?*)
       let at_board_update () = 
         let id = Is_updated.new_caller_id () in
         fun f x -> 
           if (S.value board_updated) id then f x else x
 
       let at_update sign = 
-        let is_updated = S.map (fun _ -> Is_updated.make ()) sign in
+        let is_updated = S.map ~eq:eq_never (fun _ -> Is_updated.make ()) sign in
         let id = Is_updated.new_caller_id () in
         fun f x -> 
           if (S.value is_updated) id then f x else x
@@ -679,7 +660,7 @@ module Term = struct
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
-          , Some (S_lower.at_board_update () succ_map)))
+          , Some (S_lower.at_update G_s.board succ_map)))
           ]
 
 
