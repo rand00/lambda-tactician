@@ -207,11 +207,15 @@ module Term = struct
 
     let columns_get () = LTerm.get_size term >|= LTerm_geom.cols 
 
+    let rec loop_poll_thread thread = match Lwt.poll thread with
+      | Some x -> x
+      | None -> loop_poll_thread thread
+
     let columns = 
       E.filter (fun frames -> frames mod 5 = 0) (*every n'th frame, update*)
         frames
       |> E.map_s (fun _ -> columns_get ()) 
-      |> S.hold (Lwt_main.run (columns_get())) (*run is only run once (and returns quickly)*)
+      |> S.hold (loop_poll_thread (columns_get())) (*loop is only run once*)
 
 (*
     let print_columns = S.map (Lwt_io.printf "columns: %d\n\n") columns 
@@ -263,10 +267,6 @@ module Term = struct
           in S.hold (Board.make 2) board
 
     end
-
-    let rec loop_poll_thread thread = match Lwt.poll thread with
-      | Some x -> x
-      | None -> loop_poll_thread thread
 
     (**Animations*)
 
