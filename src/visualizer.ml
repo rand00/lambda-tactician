@@ -169,6 +169,8 @@ module Term = struct
 
     let frames, send_frame = E.create ()
     let frames_s = S.hold 0 frames
+    let fps_std = 25
+    let fps_mul = 4
 
     let app_mode, send_app_mode = E.create ()
 
@@ -177,7 +179,7 @@ module Term = struct
     let run_frames_on_first () =
       let rec aux n = 
         let () = send_frame n in
-        Lwt_unix.sleep 0.04 
+        Lwt_unix.sleep ((1. /. float fps_std) /. float fps_mul)(*0.01*) (*0.04 *)
         >> aux (if n = 1000 then 0 else succ n)
       in 
       if !first_update then (
@@ -190,7 +192,7 @@ module Term = struct
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> Lwt_unix.sleep 1. (*7.*)
+      wait_for >>= fun _ -> Lwt_unix.sleep 15. (*7.*)
 
     let update ?with_actions gstate = 
       run_frames_on_first ();
@@ -368,7 +370,7 @@ module Term = struct
 
         let make () = 
           let callers = ref Set.empty in
-          fun (id:caller_id) -> 
+          fun id -> 
             if Set.mem id !callers then false else
               let () = callers := Set.add id !callers
               in true
@@ -377,21 +379,17 @@ module Term = struct
 
       let eq_never _ _ = false
 
-      let board_updated = S.map ~eq:eq_never
-          (fun _ -> Is_updated.make ())
-          G_s.board
-
-      (**Generates a new caller id, before returning a function*)
-      let at_board_update () = 
-        let id = Is_updated.new_caller_id () in
-        fun f x -> 
-          if (S.value board_updated) id then f x else x
-
+      (**Specialized versions are more efficient to call (fully)
+         several times than the follwing generalized function - avoiding the 
+         creation of new nodes in the signal graph at each call.*)
       let at_update sign = 
         let is_updated = S.map ~eq:eq_never (fun _ -> Is_updated.make ()) sign in
-        let id = Is_updated.new_caller_id () in
-        fun f x -> 
-          if (S.value is_updated) id then f x else x
+        fun f -> 
+          let id = Is_updated.new_caller_id () in
+          fun x -> 
+            if (S.value is_updated) id then f x else x
+
+      let at_board_update = at_update G_s.board
 
     end
 
@@ -413,17 +411,19 @@ module Term = struct
 
     module Adef = struct 
 
-      let make_curtain dir str ~len ~indent ~cols = 
-        Al (List.init len (fun iter -> 
+      let make_curtain dir str ~len ~indent ~cols ~each = 
+        Al (List.init len (fun _ -> 
             Ae ({ std_st with 
                   s = str; 
                   c_fg = Color.i 8; 
                   i = indent
-                }, None )) 
+                }, None ))
             |> Al.indent_head ( match dir with 
                 | `Go_left -> cols - (len*(indent +1))
                 | `Go_right -> 0 ), 
-            Some (Al.indent_head (match dir with `Go_left -> -1 | _ -> 1)))
+            Some ((Al.indent_head (match dir with `Go_left -> -1 | _ -> 1))
+                  |> S_lower.each each
+              ))
 
       let anim_of_str str ~ae_init_mapi ~ae_succ_mapi ~all_map = 
         Al ((String.enum str) |> Enum.mapi 
@@ -453,7 +453,7 @@ module Term = struct
         and c2 = (255, 255, 255)
 *)
         and n_sines = 1.
-        and speed = (Float.pi /. (float cols)) *. 3.
+        and speed = ((Float.pi /. (float cols)) *. 3.) /. (float fps_mul)
         in
         Adef.anim_of_str (String.make cols '-')
           ~ae_init_mapi:(fun i st -> { st with ex = { st.ex with
@@ -468,7 +468,7 @@ module Term = struct
               })
           ~all_map:None
       and title = 
-        let each_n = 20 
+        let each_n = 20 * fps_mul
         and max_age = 5
         in Al ([ 
             Adef.anim_of_str s0
@@ -500,8 +500,8 @@ module Term = struct
           ], None) 
       in lift_anim [
         bg; title; 
-        Adef.make_curtain `Go_left "\\" ~len:10 ~indent:7 ~cols;
-        Adef.make_curtain `Go_right "/" ~len:10 ~indent:8 ~cols
+        Adef.make_curtain `Go_left "\\" ~len:10 ~indent:7 ~cols ~each:fps_mul;
+        Adef.make_curtain `Go_right "/" ~len:10 ~indent:8 ~cols ~each:fps_mul;
       ]
 
     module Game_anim = struct
@@ -576,6 +576,48 @@ module Term = struct
 
       let p1_name_a = make_name ~name_s:G_s.p1_name ~color:(Color.p1)
 
+      (**The Gameboard*)
+
+      (* > should define the initial state + register animation functions inside state, 
+          to be applied at each frame?*)
+      let show_new_elem_state = function
+        (*goto save animation closures in list in state? 
+          -> then they can get reset and extended dynamically
+            > then we need a new equals function for state that doesn't compare functions *)
+        (*goto define player color in gamestate? >+ make sign. over it 
+          (used here and in pX_name_a ) 
+            > depend on this here
+        *)
+        (*>goto make a helper function that blinks a closure? (that get's n times called as arg)
+          of colors at a rate *)
+        | { situation = Killed } as elem -> 
+          let s = "###" 
+          in { std_st with 
+               s; 
+               c_fg = Color.rgb (94, 229, 229);
+               ex = { std_st.ex with s_orig = s; blk_id = elem.id };
+             } 
+        | { element = Symbol sym; owner } as elem -> 
+          let s = " "^(Gametypes.symbol_to_str sym)^" "
+          in { std_st with 
+               s;
+               c_fg = Color.of_player owner;
+               ex = { std_st.ex with s_orig = s; blk_id = elem.id };            
+             }
+        | { element = Lambda (sym, sym'); owner } as elem -> 
+          let s = Gametypes.((symbol_to_str sym)^"."^(symbol_to_str sym'))
+          in { std_st with 
+               s;
+               c_fg = Color.of_player owner;
+               ex = { std_st.ex with s_orig = s; blk_id = elem.id };
+             }
+        | { element = Empty } as elem -> 
+          let s = "   "
+          in { std_st with 
+               s; 
+               ex = { std_st.ex with s_orig = s; blk_id = elem.id };
+             }
+
       (*howto1 make animation game-board 
           > gameboard: how to map blocks to enduring animations? 
             > id's of blocks saved in anim-state? (yes)
@@ -588,46 +630,6 @@ module Term = struct
       *)
       (*goto make depend on player position like mana etc.*)
       let gameboard_a = 
-          (** > should define the initial state + register animation functions inside state, 
-              to be applied at each frame*)
-        let show_new_elem_state = function
-          (*goto save animation closures in list in state? 
-            -> then they can get reset and extended dynamically
-              > then we need a new equals function for state that doesn't compare functions *)
-          (*goto define player color in gamestate? >+ make sign. over it 
-            (used here and in pX_name_a ) 
-              > depend on this here
-          *)
-          (*>goto make a helper function that blinks a closure? (that get's n times called as arg)
-            of colors at a rate *)
-          | { situation = Killed } as elem -> 
-            let s = "###" 
-            in { std_st with 
-                 s; 
-                 c_fg = Color.rgb (94, 229, 229);
-                 ex = { std_st.ex with s_orig = s; blk_id = elem.id };
-               } 
-          | { element = Symbol sym; owner } as elem -> 
-            let s = " "^(Gametypes.symbol_to_str sym)^" "
-            in { std_st with 
-                 s;
-                 c_fg = Color.of_player owner;
-                 ex = { std_st.ex with s_orig = s; blk_id = elem.id };            
-               }
-          | { element = Lambda (sym, sym'); owner } as elem -> 
-            let s = Gametypes.((symbol_to_str sym)^"."^(symbol_to_str sym'))
-            in { std_st with 
-                 s;
-                 c_fg = Color.of_player owner;
-                 ex = { std_st.ex with s_orig = s; blk_id = elem.id };
-               }
-          | { element = Empty } as elem -> 
-            let s = "   "
-            in { std_st with 
-              s; 
-              ex = { std_st.ex with s_orig = s; blk_id = elem.id };
-            }
-        in 
         let succ_map al = 
           let board = Board.list (S.value G_s.board) in
           let rec find_id id = List.find (function 
