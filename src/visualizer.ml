@@ -352,6 +352,8 @@ module Term = struct
 
       let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> x
       
+      (**Structure for defining the following 'at_update' function
+        - probabley not to be used by itself*)
       module Is_updated : sig 
 
         type caller_id
@@ -380,9 +382,15 @@ module Term = struct
 
       let eq_never _ _ = false
 
+      (**!! Watch out - stateful function !!*)
       (**Specialized versions are more efficient to call (fully)
          several times than the follwing generalized function - avoiding the 
-         creation of new nodes in the signal graph at each call.*)
+         creation of new nodes in the signal graph at each call.
+
+         Semantics: [at_update s f x] returns the result of applying f on x 
+         if s has been updated since last time 'asked', else it just returns x.
+         at_update will also apply f at signal creation.
+      *)
       let at_update sign = 
         let is_updated = S.map ~eq:eq_never (fun _ -> Is_updated.make ()) sign in
         fun f -> 
