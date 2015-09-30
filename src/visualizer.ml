@@ -694,7 +694,11 @@ module Term = struct
       (*goto! make order of anims depend on position of players*)
       let full = 
         S.merge ~eq (@) [] [p0_mana_a; p0_name_a; gameboard_a; p1_name_a; p1_mana_a] 
-        |> S.map ~eq (fun l -> [ Al( l, None ) ] ) 
+        |> S.map ~eq (fun l -> [ 
+              Al((match S.value G_s.p0_pos with 
+                  | Left -> l
+                  | Right -> List.rev l)
+                , None ) ] ) 
 
       (*[ (inv_buff_anim?); gameboard_a  ]*)
 
