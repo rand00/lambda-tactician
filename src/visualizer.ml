@@ -608,6 +608,8 @@ module Term = struct
              } 
         | { element = Symbol sym; owner } as elem -> 
           let s = " "^(Gametypes.symbol_to_str sym)^" "
+          (*goto use indentations instead (make return lists of extra indented 
+            ae's that are flattened?)*)
           in { std_st with 
                s;
                c_fg = Color.of_player owner;
@@ -622,6 +624,8 @@ module Term = struct
              }
         | { element = Empty } as elem -> 
           let s = "   "
+          (*goto use indentations instead (make return lists of extra indented 
+            ae's that are flattened?)*)
           in { std_st with 
                s; 
                ex = { std_st.ex with s_orig = s; blk_id = elem.id };
@@ -656,30 +660,24 @@ module Term = struct
                 ) board
               |> List.flatten)
 
-            (*goto 
-               what to:
-                 . (done) ONLY MAP IF BOARD+/ACTIONS HAVE CHANGED
-                 . (done) construct new st list (with show_new_elem) from new board state
-                 . then take old rules of old positions of moved Ae's and optionally
-                   compose new rules with these (dep. on elem-state /+ (primarily actions))
-                   > (if not actions, then save actions info in elem-state)
-                     . but actions give more info - also shows which symbol was applied to
-                   . > do this by elem-id (not pos)
-                   > I could use elem_wrap state for choosing to go through actions
-             *)
-             (*<goo*) 
+        (*goto 
+           what to:
+             . (done) ONLY MAP IF BOARD+/ACTIONS HAVE CHANGED
+             . (done) construct new st list (with show_new_elem) from new board state
+             . then take old rules of old positions of moved Ae's and optionally
+               compose new rules with these (dep. on elem-state /+ (primarily actions))
+               > (if not actions, then save actions info in elem-state)
+                 . but actions give more info - also shows which symbol was applied to
+               . > do this by elem-id (not pos)
+               > I could use elem_wrap state for choosing to go through actions
+        *)
+        (*<goo*) 
         in 
         lift_anim [ (Al ( 
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
-          , Some (
-              S_lower.at_update G_s.p0_pos (fun l -> 
-                  match (S.value G_s.p0_pos) with 
-                  | Left -> l
-                  | Right -> List.rev l
-                ) 
-              % S_lower.at_update G_s.board succ_map
+          , Some ( S_lower.at_update G_s.board succ_map 
               (* crazycolors
                  % S_lower.at_update frames_s (List.map (function 
                     Ae (st, r) -> Ae({ st with c_fg = Color.i (Random.int 4) }, r)
@@ -691,7 +689,9 @@ module Term = struct
       (*<goo*)
       (*goto define rest of animation parts (plus messages) *)
 
-      (*goto make order of anims depend on position of players*)
+      (*goto define some buffer anim that is reused (twice?)*)
+
+      (*goto! make order of anims depend on position of players*)
       let full = 
         S.merge ~eq (@) [] [p0_mana_a; p0_name_a; gameboard_a; p1_name_a; p1_mana_a] 
         |> S.map ~eq (fun l -> [ Al( l, None ) ] ) 
