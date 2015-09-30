@@ -553,12 +553,18 @@ module Term = struct
                              (if i <= nbars then c_full else c_empty) 
                        }
                   )
-                ~all_map:None
-              |> fun al -> match (S.value pos_s), al with
-              (*goto put in all_map as before, so players dynamically can change place, 
-                but do by check diff between delayed pos_s and curr pos_s (look for delay comb.) *)
-              | Right, Al (al, r) -> Al (List.rev al, r)
-              | _ -> al );
+                ~all_map:(Some (S_lower.at_update pos_s 
+                                  (fun al -> match S.value G_s.p0_pos with
+                                     | Left -> List.rev al
+                                     | Right -> al)))
+                |> fun al -> 
+                (*goto fix that initvalue of pos_s is statically defined
+                  probabley better to pass player id instead of some unknown pos signal
+                *)
+                match (S.value pos_s), al with
+                | Right, Al (al, r) -> Al (List.rev al, r)
+                | _, al -> al
+            );
             Ae ({ std_st with s = "]" }, None );
           ], None)
 
@@ -691,7 +697,6 @@ module Term = struct
 
       (*goto define some buffer anim that is reused (twice?)*)
 
-      (*goto! make order of anims depend on position of players*)
       let full = 
         S.merge ~eq (@) [] [p0_mana_a; p0_name_a; gameboard_a; p1_name_a; p1_mana_a] 
         |> S.map ~eq (fun l -> [ 
