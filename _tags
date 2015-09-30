@@ -5,6 +5,7 @@ true: package(osc,osc.lwt)
 true: package(re,re.pcre)
 true: package(lambda-term)
 
+#true: cflag(-g)
 #<lib_osc>: -traverse
 #true: syntax(camlp4o)
-#true: cflags(-bin-annot)
+#true: cflags(-bin-annot,-g)
