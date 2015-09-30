@@ -639,6 +639,8 @@ module Term = struct
       *)
       (*goto make depend on player position like mana etc.*)
       let gameboard_a = 
+        (*goto important :o > map over al instead of board for positioning of elems
+          else reversion of direction doesn't work compositionally*)
         let succ_map al = 
           let board = Board.list (S.value G_s.board) in
           let rec find_id id = List.find (function 
@@ -672,14 +674,16 @@ module Term = struct
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
           , Some (
-              S_lower.at_update G_s.board succ_map
-              % S_lower.at_update frames_s (fun l -> 
-                  let _ = Lwt_io.printf "\n\n list rev!%d" (S.value frames_s)
-                  in List.rev l
+              S_lower.at_update G_s.p0_pos (fun l -> 
+                  match (S.value G_s.p0_pos) with 
+                  | Left -> l
+                  | Right -> List.rev l
                 ) 
-              % S_lower.at_update frames_s (List.map (function 
+              % S_lower.at_update G_s.board succ_map
+              (* crazycolors
+                 % S_lower.at_update frames_s (List.map (function 
                     Ae (st, r) -> Ae({ st with c_fg = Color.i (Random.int 4) }, r)
-                  | a -> a))
+                  | a -> a))*)
             )))
           ]
 
