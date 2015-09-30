@@ -192,7 +192,7 @@ module Term = struct
     let loading ~gstate ~wait_for = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> Lwt_unix.sleep 15. (*7.*)
+      wait_for >>= fun _ -> Lwt_unix.sleep 1. (*7.*)
 
     let update ?with_actions gstate = 
       run_frames_on_first ();
@@ -671,7 +671,16 @@ module Term = struct
             List.map (fun e -> 
                 Ae (show_new_elem_state e, None)
               ) (Board.list (S.value G_s.board))
-          , Some (S_lower.at_update G_s.board succ_map)))
+          , Some (
+              S_lower.at_update G_s.board succ_map
+              % S_lower.at_update frames_s (fun l -> 
+                  let _ = Lwt_io.printf "\n\n list rev!%d" (S.value frames_s)
+                  in List.rev l
+                ) 
+              % S_lower.at_update frames_s (List.map (function 
+                    Ae (st, r) -> Ae({ st with c_fg = Color.i (Random.int 4) }, r)
+                  | a -> a))
+            )))
           ]
 
 
