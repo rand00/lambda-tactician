@@ -174,18 +174,18 @@ module Term = struct
 
     let app_mode, send_app_mode = E.create ()
 
-    let first_update = ref true
-
-    let run_frames_on_first () =
+    let run_frames_on_first =
+      let first_update = ref true in
       let rec aux n = 
         let () = send_frame n in
-        Lwt_unix.sleep ((1. /. float fps_std) /. float fps_mul)(*0.01*) (*0.04 *)
+        Lwt_unix.sleep ((1. /. float fps_std) /. float fps_mul)
         >> aux (if n = 1000 then 0 else succ n)
       in 
-      if !first_update then (
-        Lwt.async (fun () -> (aux 0));
-        first_update := false; 
-      )
+      fun () -> 
+        if !first_update then (
+          Lwt.async (fun () -> (aux 0));
+          first_update := false; 
+        )
 
     (**Input functions*)
 
