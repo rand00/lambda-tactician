@@ -170,7 +170,7 @@ module Term = struct
     let frames, send_frame = E.create ()
     let frames_s = S.hold 0 frames
     let fps_std = 25
-    let fps_mul = 4
+    let fps_mul = 1
 
     let app_mode, send_app_mode = E.create ()
 
@@ -347,6 +347,7 @@ module Term = struct
 
     (*goto (in general) move helper modules somewhere else?*)
 
+    (** Code for working with info from signals in non-signal (lower) code*)
     module S_lower = struct 
 
       let each fr f x = match S.value frames_s mod fr with 0 -> f x | _ -> x
