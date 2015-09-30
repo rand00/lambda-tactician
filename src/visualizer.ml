@@ -715,11 +715,13 @@ module Term = struct
           )
       )
 
+    (*
     let visu_width = visu_switcher >|~ fun layers -> 
       Anim.eval layers
         ~cat:(+)
         ~get:(fun {s; i} -> i + (Zed_utf8.length s))
       |> fun lengths -> List.fold_right max lengths 0
+    *)
 
     let render_width = columns
 
