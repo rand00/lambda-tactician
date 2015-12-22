@@ -29,7 +29,8 @@ let run_with_loadscreen ~gstate ~visualizer =
         | false -> fail_with
                      "Lambdatactian: SuperCollider server (scsynth) failed to start."
         | true -> SC.Client.Lwt.make ()) in
-  let loadscr = V.loading ~gstate ~wait_for:client
+  let wait_for = client >>= fun _ -> Lwt.return_unit in
+  let loadscr = V.loading ~gstate ~wait_for ()
   in 
   let%lwt () = loadscr <&> (client >>= fun _ -> return ())
   in client

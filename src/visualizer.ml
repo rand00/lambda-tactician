@@ -23,7 +23,12 @@ open Gametypes
 module type S = sig 
   val suggest_len : unit -> int
   val update : ?with_actions:Gametypes.element_action list -> Gstate.t -> unit Lwt.t
-  val loading : gstate:Gstate.t -> wait_for:'a Lwt.t -> unit Lwt.t 
+  val loading : 
+    gstate:Gstate.t 
+    -> ?wait_for:unit Lwt.t
+    -> ?load_time:float 
+    -> unit 
+    -> unit Lwt.t 
 end
 
 module Term = struct
@@ -189,10 +194,10 @@ module Term = struct
 
     (**Input functions*)
 
-    let loading ~gstate ~wait_for = 
+    let loading ~gstate ?(wait_for=Lwt.return_unit) ?(load_time=7.) () = 
       run_frames_on_first ();
       send_app_mode Gstate.(`Mode_loading);
-      wait_for >>= fun _ -> Lwt_unix.sleep 1. (*7.*)
+      wait_for <&> Lwt_unix.sleep load_time
 
     let update ?with_actions gstate = 
       run_frames_on_first ();
